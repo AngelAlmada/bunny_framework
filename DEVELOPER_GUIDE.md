@@ -6,6 +6,8 @@ Documento técnico para desarrolladores que extienden o mantienen el framework B
 
 **← [Volver al README](README.md)**
 
+Términos clave: [GLOSARIO.md](GLOSARIO.md)
+
 ## Índice
 
 1. [Sistema de Tipos](#sistema-de-tipos)
@@ -18,6 +20,7 @@ Documento técnico para desarrolladores que extienden o mantienen el framework B
 8. [Protocolo de Comunicación](#protocolo-de-comunicación)
 9. [Ejemplos Completos](#ejemplos-completos)
 10. [Patrones y Anti-patrones](#patrones-y-anti-patrones)
+11. [Glosario de términos](#glosario-de-términos)
 
 ---
 
@@ -605,3 +608,9 @@ idf.py fullclean
 
 - [Bunny README](README.md)
 - [ESP-IDF Docs](https://docs.espressif.com/projects/esp-idf/)
+
+---
+
+## Glosario de términos
+
+Para definiciones rápidas de términos como Fluent API, DSL, hooks, Registry, runtime y otros conceptos usados en esta guía, consulta [GLOSARIO.md](GLOSARIO.md).

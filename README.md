@@ -5,6 +5,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 ## 📚 Índice de documentación
 
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
+- [GLOSARIO.md](GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [Ejemplos de Capacidades](#ejemplos-de-capacidades-ejemplo-módulos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Archivos Clave del SDK](#archivos-clave-del-sdk)
