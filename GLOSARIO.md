@@ -109,6 +109,9 @@ Sistema de tipos del SDK: `NUMBER`, `STRING`, `BOOLEAN`, `OBJECT`, `ARRAY`, `VOI
 **JSON**
 Formato de intercambio de datos usado para capacidades, comandos, eventos y respuestas.
 
+**LLM (Large Language Model)**
+Modelo de lenguaje de gran escala que puede interpretar metadata y contratos para sugerir acciones, generar procesos o asistir en integración, siempre que las capacidades estén bien documentadas.
+
 **DSL (Domain-Specific Language)**
 Lenguaje específico del dominio. En Bunny, el JSON actúa como DSL para describir capacidades y procesos.
 

@@ -33,7 +33,7 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 Bunny necesita saber qué tipo de datos espera y devuelve cada capacidad para:
 
 1. **Validación en el [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base)**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
-2. **Documentación automática**: El LLM o herramientas de generación saben exactamente qué esperar.
+2. **Documentación automática**: El [LLM](GLOSARIO.md#comunicación-y-datos) o herramientas de generación saben exactamente qué esperar.
 3. **[Serialización](GLOSARIO.md#comunicación-y-datos) segura**: [JSON](GLOSARIO.md#comunicación-y-datos) permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
 4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el motor de procesos espera STRING, lo sabremos inmediatamente.
 
@@ -52,7 +52,7 @@ enum class Type : uint8_t {
 };
 ```
 
-**Nota**: OBJECT y ARRAY se serializan como strings JSON en la metadata, pero el motor de procesos puede parsearlos según necesite.
+**Nota**: OBJECT y ARRAY se serializan como strings [JSON](GLOSARIO.md#comunicación-y-datos) en la [metadata](GLOSARIO.md#comunicación-y-datos), pero el [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) puede parsearlos según necesite.
 
 ### Alias globales para la Fluent API
 
@@ -94,7 +94,7 @@ inline const char* type_name(Type t) {
 }
 ```
 
-Se usa internamente para serializar a JSON (ej: `"returns":"number"`).
+Se usa internamente para serializar a [JSON](GLOSARIO.md#comunicación-y-datos) (ej: `"returns":"number"`).
 
 ### Ejemplo de uso
 
@@ -132,9 +132,9 @@ La **metadata es el [contrato](GLOSARIO.md#arquitectura-y-conceptos-base) semán
 
 Es crítica porque:
 
-1. **El motor de procesos no tiene el código**: El motor de procesos solo conoce lo que tú declaras en metadata.
-2. **LLM puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
-3. **Validación automática**: Las herramientas pueden validar invocaciones contra la metadata.
+1. **El [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) no tiene el código**: El motor de procesos solo conoce lo que tú declaras en metadata.
+2. **[LLM](GLOSARIO.md#comunicación-y-datos) puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
+3. **[Validación estructurada](GLOSARIO.md#comunicación-y-datos)**: Las herramientas pueden validar invocaciones contra la metadata.
 4. **Generación de UI**: El motor de procesos puede generar interfaces automáticamente.
 5. **Debugging**: Cuando algo falla, la metadata ayuda a entender qué salió mal.
 
@@ -194,7 +194,7 @@ Estos límites existen para:
 
 ### Cómo rellenar metadata
 
-#### Opción 1: Con Builders (RECOMENDADO)
+#### Opción 1: Con [Builders](GLOSARIO.md#diseño-de-api-y-código) (RECOMENDADO)
 
 Bunny maneja todo automáticamente:
 
@@ -389,7 +389,7 @@ El [Registry](GLOSARIO.md#capacidades-del-sdk) es un **índice centralizado** qu
 
 Cuando el motor de procesos envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
 
-### Singleton Pattern
+### [Singleton](GLOSARIO.md#diseño-de-api-y-código) Pattern
 
 ```cpp
 static Registry& instance() {
@@ -478,7 +478,7 @@ void app_main(void) {
 
 ## [Serialización](GLOSARIO.md#comunicación-y-datos) [JSON](GLOSARIO.md#comunicación-y-datos)
 
-Bunny **no usa bibliotecas externas** para JSON. Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
+Bunny **no usa bibliotecas externas** para [JSON](GLOSARIO.md#comunicación-y-datos). Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
 
 Cada capacidad implementa `serialize()` que genera su JSON:
 
