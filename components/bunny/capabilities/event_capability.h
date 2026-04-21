@@ -9,7 +9,7 @@ using EventEmitFn = std::function<void()>;
 /**
  * EventCapability — declares an outbound notification capability.
  *
- * Events are emitted by the device to notify the backend of something
+ * Events are emitted by the device to notify the motor de procesos of something
  * that happened (e.g. motion detected, button pressed).
  * The optional on_emit hook is called when Bunny.emit() is invoked,
  * allowing local side-effects (e.g. LED blink) alongside the notification.
@@ -32,7 +32,7 @@ public:
     const Metadata& metadata() const override { return _meta; }
     size_t          serialize(char* buf, size_t len) const override;
 
-    /** Trigger the event (sends to backend + runs optional local hook). */
+    /** Trigger the event (sends to motor de procesos + runs optional local hook). */
     void emit() const;
 
 private:

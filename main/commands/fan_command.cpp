@@ -8,7 +8,7 @@
  * Declares a command that turns a fan relay ON or OFF.
  * The execute hook performs the GPIO write; no logic here.
  *
- * Backend sends:
+ * Motor de procesos sends:
  *   { "type": "command", "command": "setFanState", "params": { "state": "ON" } }
  */
 

@@ -29,10 +29,10 @@ Documento técnico para desarrolladores que extienden o mantienen el framework B
 
 Bunny necesita saber qué tipo de datos espera y devuelve cada capacidad para:
 
-1. **Validación en el backend**: Antes de enviar un comando, el backend valida que los parámetros coinciden con los tipos esperados.
+1. **Validación en el motor de procesos**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
 2. **Documentación automática**: El LLM o herramientas de generación saben exactamente qué esperar.
 3. **Serialización segura**: JSON permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
-4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el backend espera STRING, lo sabremos inmediatamente.
+4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el motor de procesos espera STRING, lo sabremos inmediatamente.
 
 ### Tipos definidos
 
@@ -49,7 +49,7 @@ enum class Type : uint8_t {
 };
 ```
 
-**Nota**: OBJECT y ARRAY se serializan como strings JSON en la metadata, pero el backend puede parsearlos según necesite.
+**Nota**: OBJECT y ARRAY se serializan como strings JSON en la metadata, pero el motor de procesos puede parsearlos según necesite.
 
 ### Alias globales para la Fluent API
 
@@ -129,10 +129,10 @@ La **metadata es el contrato semántico** que describe qué hace cada capacidad,
 
 Es crítica porque:
 
-1. **El backend no tiene el código**: El backend solo conoce lo que tú declaras en metadata.
+1. **El motor de procesos no tiene el código**: El motor de procesos solo conoce lo que tú declaras en metadata.
 2. **LLM puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
 3. **Validación automática**: Las herramientas pueden validar invocaciones contra la metadata.
-4. **Generación de UI**: El backend puede generar interfaces automáticamente.
+4. **Generación de UI**: El motor de procesos puede generar interfaces automáticamente.
 5. **Debugging**: Cuando algo falla, la metadata ayuda a entender qué salió mal.
 
 ### Estructura detallada
@@ -322,7 +322,7 @@ Bunny.sensor("battery_voltage")
 
 ### CommandBuilder — Declara comandos
 
-Los comandos **ejecutan acciones**. Reciben parámetros del backend.
+Los comandos **ejecutan acciones**. Reciben parámetros del motor de procesos.
 
 ```cpp
 Bunny.command("setFanSpeed")
@@ -340,7 +340,7 @@ Bunny.command("setFanSpeed")
 
 ### EventBuilder — Declara eventos
 
-Los eventos **notifican al backend**. Se disparan cuando algo sucede.
+Los eventos **notifican al motor de procesos**. Se disparan cuando algo sucede.
 
 ```cpp
 Bunny.event("motion_detected")
@@ -356,7 +356,7 @@ Bunny.event("motion_detected")
 
 ### StateBuilder — Declara estado
 
-El estado **almacena valores**. Backend puede leer Y escribir.
+El estado **almacena valores**. Motor de procesos puede leer Y escribir.
 
 ```cpp
 static const char* s_fan_state = "OFF";
@@ -381,10 +381,10 @@ Bunny.state("fanState", STRING)
 El Registry es un **índice centralizado** que permite:
 - Almacenar todas las capacidades (sensores, comandos, eventos, states).
 - Buscar una capacidad por nombre y tipo.
-- Serializar todo a JSON para enviar al backend.
+- Serializar todo a JSON para enviar al motor de procesos.
 - Despachar comandos a sus hooks de ejecución.
 
-Cuando el backend envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
+Cuando el motor de procesos envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
 
 ### Singleton Pattern
 
@@ -505,35 +505,35 @@ El Registry combina todos en un manifest:
 
 ## Protocolo de Comunicación
 
-Mensajes JSON esperados entre backend y ESP32:
+Mensajes JSON esperados entre motor de procesos y ESP32:
 
 ### Comando
 
-**Backend → ESP32**:
+**Motor de procesos → ESP32**:
 ```json
 {"id": "req-001", "type": "command", "command": "setFanSpeed", "params": {"speed": 75}}
 ```
 
-**ESP32 → Backend**:
+**ESP32 → Motor de procesos**:
 ```json
 {"id": "req-001", "status": "ok", "result": null, "timestamp": 1234567890}
 ```
 
 ### Sensor
 
-**Backend → ESP32**:
+**Motor de procesos → ESP32**:
 ```json
 {"id": "req-002", "type": "sensor", "sensor": "temperature"}
 ```
 
-**ESP32 → Backend**:
+**ESP32 → Motor de procesos**:
 ```json
 {"id": "req-002", "status": "ok", "value": 23.5, "timestamp": 1234567890}
 ```
 
 ### Evento (push)
 
-**ESP32 → Backend**:
+**ESP32 → Motor de procesos**:
 ```json
 {"event": "motion_detected", "timestamp": 1234567890, "data": {}}
 ```

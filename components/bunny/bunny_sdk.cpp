@@ -67,7 +67,7 @@ StateBuilder   BunnySDK::state  (const char* name, Type t) { return StateBuilder
 void BunnySDK::emit(const char* event_name) {
     auto* cap = Registry::instance().find(event_name, CapabilityKind::EVENT);
     if (cap) static_cast<EventCapability*>(cap)->emit();
-    // TODO: send event notification to backend via network module
+    // TODO: send event notification to motor de procesos via network module
 }
 
 double BunnySDK::read(const char* sensor_name) {

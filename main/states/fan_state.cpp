@@ -5,10 +5,10 @@
  * Fan State — example capability module.
  *
  * Declares an internal state variable that tracks the fan relay state.
- * The backend can read and write this state.
+ * The motor de procesos can read and write this state.
  *
  * Note: the setter does NOT contain logic — it only stores the value.
- * The backend decides WHEN to set it; the setFanState command applies it.
+ * The motor de procesos decides WHEN to set it; the setFanState command applies it.
  */
 
 static const char* s_fan_state = "OFF";

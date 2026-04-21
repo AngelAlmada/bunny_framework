@@ -11,7 +11,7 @@ using StateSetFn = std::function<void(const char*)>;
  * StateCapability — declares an internal device state variable.
  *
  * State is not business logic — it is a typed slot that holds a value
- * the backend can read or write (e.g. current fan speed, relay state).
+ * the motor de procesos can read or write (e.g. current fan speed, relay state).
  * Getters/setters interact with hardware registers or global variables.
  *
  * Example:

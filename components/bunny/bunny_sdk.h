@@ -66,7 +66,7 @@ public:
 
     // ── Runtime hooks (called from hardware ISRs / tasks) ────────────────────
 
-    /** Emit a named event to the backend. */
+    /** Emit a named event to the motor de procesos. */
     void   emit(const char* event_name);
 
     /** Read the current value of a named sensor. */

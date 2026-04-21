@@ -10,7 +10,7 @@ static constexpr size_t MAX_CAPABILITIES = 32;
  * Registry — central store for all declared capabilities.
  *
  * Capabilities are registered once at startup (in bunny_load_modules).
- * The Registry is then serialized and sent to the backend as the
+ * The Registry is then serialized and sent to the motor de procesos as the
  * device's capability manifest.
  *
  * It also serves as the lookup table for the dispatcher (protocol layer)

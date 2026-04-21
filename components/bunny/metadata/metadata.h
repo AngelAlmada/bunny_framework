@@ -20,7 +20,7 @@ struct ParamDef {
 
 /**
  * Complete metadata for a capability.
- * This is what gets serialized and sent to the backend so it can
+ * This is what gets serialized and sent to the motor de procesos so it can
  * reason about which capabilities exist and how to use them.
  *
  * Fields:

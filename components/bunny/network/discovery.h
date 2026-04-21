@@ -9,7 +9,7 @@ extern "C" {
  * Descubrimiento UDP de Bunny
  *
  * El ESP32 emite broadcasts UDP periódicos con su identidad
- * (id, name, ip, webhook_port, path) para que el backend lo encuentre
+ * (id, name, ip, webhook_port, path) para que el motor de procesos lo encuentre
  * en la red local sin necesidad de configuración manual.
  *
  * Formato del mensaje emitido (JSON):

@@ -47,7 +47,7 @@ using CommandExecuteFn = std::function<void(const Params&)>;
 /**
  * CommandCapability — declares an action-executing capability.
  *
- * The execute hook is called when the backend sends a command message.
+ * The execute hook is called when the motor de procesos sends a command message.
  * The lambda receives the typed Params and performs ONLY hardware actions.
  *
  * Example:

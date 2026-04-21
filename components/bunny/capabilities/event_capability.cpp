@@ -8,7 +8,7 @@ EventCapability::EventCapability(const char* name, const Metadata& meta, EventEm
     : _name(name), _meta(meta), _on_emit(std::move(on_emit)) {}
 
 void EventCapability::emit() const {
-    /* Transport layer (network module) handles sending to backend.
+    /* Transport layer (network module) handles sending to motor de procesos.
        The optional local hook runs for hardware side-effects only. */
     if (_on_emit) _on_emit();
 }

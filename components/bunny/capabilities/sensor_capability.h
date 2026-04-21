@@ -9,7 +9,7 @@ using SensorReadFn = std::function<double()>;
 /**
  * SensorCapability — declares a data-producing capability.
  *
- * The read hook is called by the runtime when the backend requests
+ * The read hook is called by the runtime when the motor de procesos requests
  * a sensor reading. No logic lives here; the lambda only reads hardware.
  *
  * Example:

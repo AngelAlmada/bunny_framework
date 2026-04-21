@@ -1,6 +1,6 @@
 # Bunny Framework (ESP32)
 
-Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensores, comandos, eventos y estados), donde la **lógica de negocio vive en backend**.
+Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensores, comandos, eventos y estados), donde la **lógica de negocio vive en motor de procesos**.
 
 ## 📚 Índice de documentación
 
@@ -15,7 +15,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 Bunny separa completamente responsabilidades:
 
 - **ESP32 + Bunny**: define capacidades y ejecuta acciones de hardware.
-- **Backend**: decide reglas, flujos, condiciones y procesos.
+- **Motor de procesos**: decide reglas, flujos, condiciones y procesos.
 - **JSON (DSL)**: contrato de comunicación entre ambos.
 
 > Regla principal: el firmware NO decide lógica de negocio.
@@ -90,9 +90,9 @@ Codigo del framework en si (SDK + runtime base).
 - `capabilities/`: implementaciones de `SensorCapability`, `CommandCapability`, `EventCapability`, `StateCapability`.
 - `builder/`: fluent API para declarar capacidades de forma ergonomica.
 - `registry/`: registro central de capacidades y serializacion a JSON.
-- `protocol/`: parseo/serializacion de mensajes JSON (backend <-> dispositivo).
+- `protocol/`: parseo/serializacion de mensajes JSON (motor de procesos <-> dispositivo).
 - `runtime/`: ciclo de ejecucion y despacho de hooks (sin logica de negocio).
-- `network/`: transporte (discovery UDP y conexion con backend/webhook).
+- `network/`: transporte (discovery UDP y conexion con motor de procesos/webhook).
 - `config/`: carga y acceso de configuracion del dispositivo (`device.json`).
 - `utils/`: helpers ligeros compartidos (ej. construccion JSON sin dependencias).
 
@@ -168,7 +168,7 @@ Cada capacidad debe definir, idealmente siempre:
 
 Esto permite:
 
-- Menos errores de uso desde backend/LLM.
+- Menos errores de uso desde motor de procesos/LLM.
 - Validacion estructurada de invocaciones.
 - Generacion de procesos y tooling automatico.
 
@@ -203,8 +203,8 @@ void register_fan_command() {
 
 - No meter reglas de negocio en ESP32 (`if/else` de negocio, workflows, condiciones de proceso).
 - No evaluar strings como codigo.
-- No acoplar decisiones del backend en firmware.
-- Si una capacidad no esta bien documentada en metadata, su uso por backend/LLM sera fragil.
+- No acoplar decisiones del motor de procesos en firmware.
+- Si una capacidad no esta bien documentada en metadata, su uso por motor de procesos/LLM sera fragil.
 
 ## Build (ESP-IDF)
 
@@ -224,7 +224,7 @@ Ver [config/device.json](config/device.json) para configurar:
 
 - **Identidad del dispositivo**: `id`, `name`, `description`, `version`
 - **Discovery UDP**: puerto y intervalo de broadcast
-- **Webhook**: puerto y path para conexión con backend
+- **Webhook**: puerto y path para conexión con motor de procesos
 
 ## Estado actual
 
