@@ -1,4 +1,4 @@
-# Bunny SDK — Guía de Desarrollo
+# Bunny SDK — Guía de Desarrollo (COMPLETA)
 
 Documento técnico para desarrolladores que extienden o mantienen el framework Bunny.
 
@@ -15,6 +15,7 @@ Documento técnico para desarrolladores que extienden o mantienen el framework B
 7. [Serialización JSON](#serialización-json)
 8. [Protocolo de Comunicación](#protocolo-de-comunicación)
 9. [Ejemplos Completos](#ejemplos-completos)
+10. [Patrones y Anti-patrones](#patrones-y-anti-patrones)
 
 ---
 
@@ -22,39 +23,96 @@ Documento técnico para desarrolladores que extienden o mantienen el framework B
 
 **Archivo**: [`components/bunny/types/bunny_types.h`](components/bunny/types/bunny_types.h)
 
-Bunny define 5 tipos primitivos para parámetros y retornos:
+### ¿Por qué un sistema de tipos?
+
+Bunny necesita saber qué tipo de datos espera y devuelve cada capacidad para:
+
+1. **Validación en el backend**: Antes de enviar un comando, el backend valida que los parámetros coinciden con los tipos esperados.
+2. **Documentación automática**: El LLM o herramientas de generación saben exactamente qué esperar.
+3. **Serialización segura**: JSON permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
+4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el backend espera STRING, lo sabremos inmediatamente.
+
+### Tipos definidos
+
+Bunny define **5 tipos primitivos** que cubren el 99% de casos de uso en IoT:
 
 ```cpp
 enum class Type : uint8_t {
-    NUMBER  = 0,
-    STRING  = 1,
-    BOOLEAN = 2,
-    OBJECT  = 3,
-    ARRAY   = 4,
-    VOID    = 5,
+    NUMBER  = 0,    // Números flotantes y enteros (double en C++)
+    STRING  = 1,    // Cadenas de texto (const char* en C++)
+    BOOLEAN = 2,    // Valores verdadero/falso
+    OBJECT  = 3,    // Objetos JSON anidados (tratados como strings actualmente)
+    ARRAY   = 4,    // Arreglos JSON (tratados como strings actualmente)
+    VOID    = 5,    // Sin retorno (ej: comandos que no devuelven valor)
 };
 ```
 
-**Alias globales** (para usar sin namespace en fluent API):
+**Nota**: OBJECT y ARRAY se serializan como strings JSON en la metadata, pero el backend puede parsearlos según necesite.
+
+### Alias globales para la Fluent API
+
+Para que el código sea más legible, Bunny define alias globales (sin namespace) en el mismo archivo:
 
 ```cpp
 static constexpr bunny::Type NUMBER  = bunny::Type::NUMBER;
 static constexpr bunny::Type STRING  = bunny::Type::STRING;
-// ... etc
+static constexpr bunny::Type BOOLEAN = bunny::Type::BOOLEAN;
+static constexpr bunny::Type OBJECT  = bunny::Type::OBJECT;
+static constexpr bunny::Type ARRAY   = bunny::Type::ARRAY;
 ```
 
-**Conversión a string**: función `type_name(Type t)` retorna `"number"`, `"string"`, etc.
-
-### Uso
+Esto permite escribir:
 
 ```cpp
-Bunny.sensor("value")
-     .returns(NUMBER)      // tipo de retorno: numérico
-     .build([](){ return 42.0; });
+// En lugar de:
+Bunny.sensor("temp").returns(bunny::Type::NUMBER);
 
-Bunny.command("name")
-     .param("input", STRING)  // parámetro de tipo string
-     .execute([](const Params& p) { ... });
+// Simplemente:
+Bunny.sensor("temp").returns(NUMBER);
+```
+
+### Helper: type_name()
+
+La función `type_name(Type t)` convierte el enum a string:
+
+```cpp
+inline const char* type_name(Type t) {
+    switch (t) {
+        case Type::NUMBER:  return "number";
+        case Type::STRING:  return "string";
+        case Type::BOOLEAN: return "boolean";
+        case Type::OBJECT:  return "object";
+        case Type::ARRAY:   return "array";
+        case Type::VOID:    return "void";
+        default:            return "unknown";
+    }
+}
+```
+
+Se usa internamente para serializar a JSON (ej: `"returns":"number"`).
+
+### Ejemplo de uso
+
+```cpp
+// Sensor que devuelve un número (temperatura)
+Bunny.sensor("temperature")
+     .description("Room temperature in Celsius")
+     .returns(NUMBER)  // <-- Tipo de retorno
+     .build([]() -> double {
+         return 23.5;
+     });
+
+// Comando que recibe un parámetro string
+Bunny.command("setMode")
+     .param("mode", STRING, "auto, manual, or standby")
+     .execute([](const Params& p) {
+         const char* mode = p.get_string("mode");
+     });
+
+// Comando sin retorno
+Bunny.command("reset")
+     .description("Soft reset device")
+     .execute([](const Params& p) { /* no retorna nada */ });
 ```
 
 ---
@@ -63,48 +121,116 @@ Bunny.command("name")
 
 **Archivo**: [`components/bunny/metadata/metadata.h`](components/bunny/metadata/metadata.h)
 
-Metadata es el contrato semántico que permite:
-- Validación estructurada.
-- Consumo por backend/LLM.
-- Generación auto de procesos.
+### ¿Qué es la metadata y por qué es crítica?
 
-### Estructura
+La **metadata es el contrato semántico** que describe qué hace cada capacidad, qué parámetros acepta, qué retorna, y cómo se relaciona con otras capacidades.
+
+Es crítica porque:
+
+1. **El backend no tiene el código**: El backend solo conoce lo que tú declaras en metadata.
+2. **LLM puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
+3. **Validación automática**: Las herramientas pueden validar invocaciones contra la metadata.
+4. **Generación de UI**: El backend puede generar interfaces automáticamente.
+5. **Debugging**: Cuando algo falla, la metadata ayuda a entender qué salió mal.
+
+### Estructura detallada
 
 ```cpp
 struct ParamDef {
-    const char* name;          // "state"
-    Type        type;          // STRING
-    const char* description;   // "ON or OFF"
-    bool        required;      // true
+    const char* name;          // Nombre del parámetro: "state"
+    Type        type;          // Tipo: STRING, NUMBER, etc.
+    const char* description;   // Documentación: "ON or OFF"
+    bool        required;      // ¿Es obligatorio? true = sí, false = opcional
 };
 
 struct Metadata {
-    const char* description;               // "Turn fan ON/OFF"
-    Type        returns_type;              // VOID
-    ParamDef    params[MAX_PARAMS];        // array de parámetros
-    size_t      param_count;               // número de parámetros
-    const char* tags[MAX_TAGS];            // ["actuator", "climate"]
+    // Descripción de qué hace esta capacidad
+    const char* description;
+    // "Control the fan speed from 0 to 100%"
+
+    // Tipo de datos que retorna (para sensores y comandos)
+    Type        returns_type;
+    // Type::NUMBER para sensores, Type::VOID para comandos sin retorno
+
+    // Parámetros de entrada (si aplica)
+    ParamDef    params[MAX_PARAMS];
+    // Array de definiciones de parámetros
+    size_t      param_count;
+    // Cuántos parámetros realmente hay (0-8)
+
+    // Etiquetas semánticas
+    const char* tags[MAX_TAGS];
+    // ["actuator", "climate", "fan"] - ayudan a categorizar
     size_t      tag_count;
-    const char* affects[MAX_AFFECTS];      // ["fanState"]
+
+    // Qué otras capacidades se ven afectadas
+    const char* affects[MAX_AFFECTS];
+    // ["fanSpeed", "fanState"] - cambiar esto afecta estas otras cosas
     size_t      affects_count;
-    const char* example;                   // "{\"state\": \"ON\"}"
+
+    // Ejemplo práctico
+    const char* example;
+    // "{\"speed\": 75, \"rampTime\": 500}" - ayuda a entender uso
 };
 ```
 
-### Constraints
-
-- `MAX_PARAMS = 8` parámetros máximo por capacidad.
-- `MAX_TAGS = 8` tags máximo.
-- `MAX_AFFECTS = 8` capacidades afectadas máximo.
-
-### Llenado manual (si no usas builders)
+### Límites (todos configurables en el .h)
 
 ```cpp
+static constexpr size_t MAX_PARAMS  = 8;      // Máximo 8 parámetros por capacidad
+static constexpr size_t MAX_TAGS    = 8;      // Máximo 8 tags
+static constexpr size_t MAX_AFFECTS = 8;      // Máximo 8 afectaciones
+```
+
+Estos límites existen para:
+- **ESP32 es memoria limitada**: No queremos arrays dinámicos.
+- **Simplicidad**: Si necesitas más, probablemente necesitas refactorizar.
+- **Previsibilidad**: Tamaños conocidos en compile-time.
+
+### Cómo rellenar metadata
+
+#### Opción 1: Con Builders (RECOMENDADO)
+
+Bunny maneja todo automáticamente:
+
+```cpp
+Bunny.sensor("humidity")
+     .description("Relative humidity percentage")
+     .returns(NUMBER)
+     .tag("climate")
+     .tag("environment")
+     .affects("climate_control")
+     .example("Read: 65.3%")
+     .build([]() -> double { return 65.3; });
+```
+
+#### Opción 2: Manual (si lo necesitas)
+
+```cpp
+// Crear metadata manualmente
 Metadata meta{};
-meta.description = "My sensor";
+meta.description = "My custom sensor";
 meta.returns_type = Type::NUMBER;
-meta.tags[0] = "environment";
-meta.tag_count = 1;
+
+// Agregar parámetros
+meta.params[0] = {"threshold", Type::NUMBER, "Alert threshold", true};
+meta.param_count = 1;
+
+// Agregar tags
+meta.tags[0] = "custom";
+meta.tags[1] = "monitoring";
+meta.tag_count = 2;
+
+// Agregar afectaciones
+meta.affects[0] = "alertState";
+meta.affects_count = 1;
+
+// Ejemplo
+meta.example = "threshold: 25";
+
+// Luego crear la capacidad
+auto sensor = SensorCapability("my_sensor", meta, []() { return 10.0; });
+Registry::instance().register_capability(&sensor);
 ```
 
 ---
@@ -113,34 +239,49 @@ meta.tag_count = 1;
 
 **Archivo**: [`components/bunny/core/capability.h`](components/bunny/core/capability.h)
 
-### ICapability (interfaz)
+### ¿Qué es un contrato base?
+
+Un contrato base (interfaz) define la forma en que **todas** las capacidades se comportan, sin importar su tipo específico.
+
+Piénsalo como un "acuerdo":
+- Toda capacidad tiene un nombre.
+- Toda capacidad tiene metadata.
+- Toda capacidad sabe qué tipo es (sensor, command, etc.).
+- Toda capacidad puede serializarse a JSON.
+
+### ICapability - La interfaz madre
 
 ```cpp
 class ICapability {
 public:
     virtual ~ICapability() = default;
 
+    // ¿Qué tipo de capacidad soy? (SENSOR, COMMAND, EVENT, STATE)
     virtual CapabilityKind  kind()     const = 0;
+
+    // ¿Cómo me llamo?
     virtual const char*     name()     const = 0;
+
+    // ¿Cuál es mi metadata?
     virtual const Metadata& metadata() const = 0;
+
+    // ¿Cómo te digo quién soy en JSON?
     virtual size_t          serialize(char* buf, size_t len) const = 0;
 };
 ```
 
-Cada capacidad instancia una clase derivada de `ICapability`.
+Cada método virtual es puro (`= 0`), significando que **cada subclase DEBE implementarla**.
 
-### CapabilityKind
+### CapabilityKind - Tipos de capacidades
 
 ```cpp
 enum class CapabilityKind : uint8_t {
-    SENSOR  = 0,
-    COMMAND = 1,
-    EVENT   = 2,
-    STATE   = 3,
+    SENSOR  = 0,    // Produce datos (lectura)
+    COMMAND = 1,    // Ejecuta acciones (escritura)
+    EVENT   = 2,    // Notifica sucesos (push)
+    STATE   = 3,    // Almacena estado (read/write)
 };
 ```
-
-Function helper: `const char* capability_kind_name(CapabilityKind k)` → `"sensor"`, `"command"`, etc.
 
 ---
 
@@ -148,108 +289,84 @@ Function helper: `const char* capability_kind_name(CapabilityKind k)` → `"sens
 
 **Archivos**: [`components/bunny/builder/`](components/bunny/builder/)
 
-Bunny proporciona 4 builders correspondientes a los 4 tipos de capacidades.
+### ¿Qué es una Fluent API?
 
-### 1. SensorBuilder
-
-**Uso**:
+Es un **patrón de diseño** que permite encadenar llamadas de métodos para construir objetos de forma legible.
 
 ```cpp
+// Con fluent API (muy legible):
 Bunny.sensor("temperature")
-     .description("Room temperature in Celsius")
+     .description("Room temp")
      .returns(NUMBER)
      .tag("environment")
-     .tag("climate")
-     .affects("climate_control")
-     .example("Read: 23.5°C")
+     .build([]() { return 25.0; });
+```
+
+### SensorBuilder — Declara sensores
+
+Los sensores **producen datos**. Leen hardware y retornan un número.
+
+```cpp
+Bunny.sensor("battery_voltage")
+     .description("Current battery voltage in volts")
+     .returns(NUMBER)
+     .tag("power")
+     .example("Read: 3.7V")
      .build([]() -> double {
-         return read_adc_temperature();
+         int raw = adc_read(ADC_PIN_BATTERY);
+         return (raw / 4095.0) * 4.2;
      });
 ```
 
-**Métodos**:
-- `description(const char*)` → `SensorBuilder&`
-- `returns(Type)` → `SensorBuilder&`
-- `tag(const char*)` → `SensorBuilder&` (repetible)
-- `affects(const char*)` → `SensorBuilder&` (repetible)
-- `example(const char*)` → `SensorBuilder&`
-- `build(SensorReadFn)` → `SensorCapability*` (registra automaticamente)
+### CommandBuilder — Declara comandos
 
-### 2. CommandBuilder
-
-**Uso**:
+Los comandos **ejecutan acciones**. Reciben parámetros del backend.
 
 ```cpp
 Bunny.command("setFanSpeed")
-     .description("Set fan speed 0-100")
-     .param("speed", NUMBER, "0-100 percentage", true)
-     .param("rampTime", NUMBER, "Ramp time in ms", false)
+     .description("Set fan speed 0-100%")
+     .param("speed", NUMBER, "Target speed percentage (0-100)")
+     .param("rampTime", NUMBER, "Ramp time in ms (optional)", false)
      .affects("fanSpeed")
      .tag("actuator")
-     .example("{\"speed\": 75}")
-     .execute([](const Params& p) {
+     .example("{\"speed\": 75, \"rampTime\": 2000}")
+     .execute([](const bunny::Params& p) {
          int speed = (int)p.get_number("speed");
-         gpio_set_pwm(FAN_PIN, speed);
+         pwm_set(FAN_PIN, speed);
      });
 ```
 
-**Métodos**:
-- `description(const char*)` → `CommandBuilder&`
-- `param(name, type, description="", required=true)` → `CommandBuilder&` (repetible)
-- `tag(const char*)` → `CommandBuilder&` (repetible)
-- `affects(const char*)` → `CommandBuilder&` (repetible)
-- `returns(Type)` → `CommandBuilder&` (opcional)
-- `example(const char*)` → `CommandBuilder&`
-- `execute(CommandExecuteFn)` → `CommandCapability*` (registra automáticamente)
+### EventBuilder — Declara eventos
 
-### 3. EventBuilder
-
-**Uso**:
+Los eventos **notifican al backend**. Se disparan cuando algo sucede.
 
 ```cpp
 Bunny.event("motion_detected")
      .description("PIR sensor detected movement")
-     .param("intensity", NUMBER, "Movement intensity 0-100")
      .tag("sensor")
      .tag("security")
-     .example("{\"intensity\": 85}")
      .build([]() {
-         // Hook local opcional: lado-effects de hardware
-         gpio_set_level(LED_PIN, 1);
+         gpio_set_level(LED_PIN, 1);  // Feedback local
          vTaskDelay(100 / portTICK_PERIOD_MS);
          gpio_set_level(LED_PIN, 0);
      });
 ```
 
-**Métodos**:
-- `description(const char*)` → `EventBuilder&`
-- `param(name, type, description="")` → `EventBuilder&` (repetible)
-- `tag(const char*)` → `EventBuilder&` (repetible)
-- `example(const char*)` → `EventBuilder&`
-- `build(EventEmitFn = nullptr)` → `EventCapability*` (registra automáticamente)
+### StateBuilder — Declara estado
 
-### 4. StateBuilder
-
-**Uso**:
+El estado **almacena valores**. Backend puede leer Y escribir.
 
 ```cpp
 static const char* s_fan_state = "OFF";
 
 Bunny.state("fanState", STRING)
-     .description("Current fan relay state")
+     .description("Current fan state: ON or OFF")
      .tag("actuator")
-     .example("OFF")
      .build(
          []() -> const char* { return s_fan_state; },
          [](const char* v)   { s_fan_state = v;    }
      );
 ```
-
-**Métodos**:
-- `description(const char*)` → `StateBuilder&`
-- `tag(const char*)` → `StateBuilder&` (repetible)
-- `example(const char*)` → `StateBuilder&`
-- `build(StateGetFn get=nullptr, StateSetFn set=nullptr)` → `StateCapability*` (registra automáticamente)
 
 ---
 
@@ -257,81 +374,49 @@ Bunny.state("fanState", STRING)
 
 **Archivo**: [`components/bunny/registry/registry.h`](components/bunny/registry/registry.h)
 
-El Registry es un singleton que mantiene todas las capacidades declaradas.
+### ¿Por qué un Registry?
 
-### Interfaz pública
+El Registry es un **índice centralizado** que permite:
+- Almacenar todas las capacidades (sensores, comandos, eventos, states).
+- Buscar una capacidad por nombre y tipo.
+- Serializar todo a JSON para enviar al backend.
+- Despachar comandos a sus hooks de ejecución.
 
-```cpp
-class Registry {
-public:
-    static Registry& instance();
+Cuando el backend envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
 
-    // Registro (llamado automáticamente por builders)
-    bool register_capability(ICapability* cap);
-
-    // Búsqueda
-    ICapability* find(const char* name, CapabilityKind kind) const;
-
-    // Acceso directo
-    size_t       count() const;
-    ICapability* at(size_t i) const;
-
-    // Serialización a JSON
-    size_t serialize_capabilities(char* buf, size_t len) const;
-};
-```
-
-### Uso típico
+### Singleton Pattern
 
 ```cpp
-// Usualmente transparente (builders registran automáticamente)
-Bunny.sensor("temperature").build([]() { return 25.0; });
-
-// Acceso directo si lo necesitas
-auto* sensor = Registry::instance().find("temperature", CapabilityKind::SENSOR);
-if (sensor) {
-    double value = static_cast<SensorCapability*>(sensor)->read();
+static Registry& instance() {
+    static Registry s_instance;
+    return s_instance;
 }
 ```
 
-### JSON de salida
+Solo hay **una** instancia en toda la aplicación:
 
-```json
-{
-  "sensors": [
-    {
-      "name": "temperature",
-      "kind": "sensor",
-      "description": "Room temperature in Celsius",
-      "returns": "number",
-      "tags": ["environment", "climate"],
-      "affects": ["climate_control"],
-      "example": "Read: 23.5°C"
-    }
-  ],
-  "commands": [...],
-  "events": [...],
-  "states": [...]
-}
+```cpp
+Registry::instance().register_capability(cap);
+Registry::instance().find("temperature", CapabilityKind::SENSOR);
 ```
 
 ---
 
 ## Crear un Módulo de Capacidades
 
-Estructura estándar:
+Estructura recomendada:
 
 ```text
 main/
 ├── sensors/
-│   ├── my_sensor.h
-│   └── my_sensor.cpp
+│   ├── temperature_sensor.h
+│   └── temperature_sensor.cpp
 ├── commands/
 ├── events/
 └── states/
 ```
 
-### Ejemplo: `main/sensors/my_sensor.h`
+### Header (.h)
 
 ```cpp
 #pragma once
@@ -340,50 +425,45 @@ main/
 extern "C" {
 #endif
 
-void register_my_sensor();
+void register_temperature_sensor();
 
 #ifdef __cplusplus
 }
 #endif
 ```
 
-### Ejemplo: `main/sensors/my_sensor.cpp`
+### Implementación (.cpp)
 
 ```cpp
-#include "my_sensor.h"
+#include "temperature_sensor.h"
 #include "bunny_sdk.h"
 
-// Hardware read function
-static double read_hardware() {
-    // TODO: leer ADC, I2C, SPI, etc.
-    return 42.0;
+static double read_temperature_hw() {
+    // TODO: hardware read aquí
+    return 23.5;
 }
 
-void register_my_sensor() {
-    Bunny.sensor("my_sensor")
-         .description("My awesome sensor data")
+void register_temperature_sensor() {
+    Bunny.sensor("temperature")
+         .description("Ambient temperature in Celsius")
          .returns(NUMBER)
-         .tag("custom")
+         .tag("environment")
+         .example("Read: 23.5")
          .build([]() -> double {
-             return read_hardware();
+             return read_temperature_hw();
          });
 }
 ```
 
-### Integración en `main/bunny_framework.c`
+### Integración en main
 
 ```c
 #include "bunny.h"
-#include "sensors/my_sensor.h"
+#include "sensors/temperature_sensor.h"
 
-void app_main(void)
-{
+void app_main(void) {
     bunny_begin();
-    
-    // Registrar capacidades
-    register_my_sensor();
-    // ... otros modulos
-    
+    register_temperature_sensor();  // <-- Registra aquí
     bunny_load_modules();
     bunny_loop();
 }
@@ -393,274 +473,127 @@ void app_main(void)
 
 ## Serialización JSON
 
-**Archivo**: [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h)
+Bunny **no usa bibliotecas externas** para JSON. Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
 
-Helper ligero **sin dependencias externas** para generar JSON en buffers fixed-size (ESP32-friendly).
+Cada capacidad implementa `serialize()` que genera su JSON:
 
-### Funciones públicas
-
-```cpp
-namespace bunny::json {
-
-// Append strings safely within buffer boundaries
-inline size_t append(char* buf, size_t len, size_t& pos, const char* str);
-
-// Serialize full Metadata struct to JSON fragment
-inline size_t serialize_metadata(char* buf, size_t len, const Metadata& m);
-
+```json
+{
+  "name": "temperature",
+  "kind": "sensor",
+  "description": "Ambient temperature in Celsius",
+  "returns": "number",
+  "tags": ["environment"],
+  "example": "Read: 23.5"
 }
 ```
 
-### Uso
+El Registry combina todos en un manifest:
 
-```cpp
-char buffer[512];
-size_t pos = 0;
-
-json::append(buffer, sizeof(buffer), pos, "{");
-json::append(buffer, sizeof(buffer), pos, "\"name\":\"test\"");
-json::append(buffer, sizeof(buffer), pos, "}");
-
-// buffer contiene: {"name":"test"}
+```json
+{
+  "sensors": [...],
+  "commands": [...],
+  "events": [...],
+  "states": [...]
+}
 ```
-
-Cada capacidad usa `serialize_metadata()` en su método `serialize()`.
 
 ---
 
 ## Protocolo de Comunicación
 
-**Archivo**: [`components/bunny/protocol/protocol.h`](components/bunny/protocol/protocol.h) (TODO: implementar)
+Mensajes JSON esperados entre backend y ESP32:
 
-### Formato esperado de mensajes
+### Comando
 
-**Comando entrante** (backend → ESP32):
-
+**Backend → ESP32**:
 ```json
-{
-  "id": "req-001",
-  "type": "command",
-  "command": "setFanState",
-  "params": {
-    "state": "ON"
-  }
-}
+{"id": "req-001", "type": "command", "command": "setFanSpeed", "params": {"speed": 75}}
 ```
 
-**Respuesta** (ESP32 → backend):
-
+**ESP32 → Backend**:
 ```json
-{
-  "id": "req-001",
-  "status": "ok",
-  "result": null
-}
+{"id": "req-001", "status": "ok", "result": null, "timestamp": 1234567890}
 ```
 
-**Solicitud de lectura de sensor**:
+### Sensor
 
+**Backend → ESP32**:
 ```json
-{
-  "id": "req-002",
-  "type": "sensor",
-  "sensor": "temperature"
-}
+{"id": "req-002", "type": "sensor", "sensor": "temperature"}
 ```
 
-**Respuesta**:
-
+**ESP32 → Backend**:
 ```json
-{
-  "id": "req-002",
-  "status": "ok",
-  "value": 23.5
-}
+{"id": "req-002", "status": "ok", "value": 23.5, "timestamp": 1234567890}
 ```
 
-**Evento emitido por ESP32**:
+### Evento (push)
 
+**ESP32 → Backend**:
 ```json
-{
-  "event": "motion_detected",
-  "timestamp": 1234567890,
-  "data": {}
-}
+{"event": "motion_detected", "timestamp": 1234567890, "data": {}}
 ```
-
-### Implementación (TODO)
-
-El módulo `protocol` debe:
-1. Parsear JSON entrante.
-2. Validar contra metadata en Registry.
-3. Invocar hooks (execute, read, etc.) con parámetros tipados.
-4. Serializar respuestas.
 
 ---
 
 ## Ejemplos Completos
 
-### Sensor simple
-
-**Archivo**: [`main/sensors/temperature_sensor.cpp`](main/sensors/temperature_sensor.cpp)
-
-```cpp
-#include "temperature_sensor.h"
-#include "bunny_sdk.h"
-
-static double read_temperature_hw() {
-    return 23.5; // TODO: reemplazar con lectura real
-}
-
-void register_temperature_sensor() {
-    Bunny.sensor("temperature")
-         .description("Ambient temperature in degrees Celsius")
-         .returns(NUMBER)
-         .tag("environment")
-         .tag("climate")
-         .example("Read: 23.5")
-         .build([]() -> double {
-             return read_temperature_hw();
-         });
-}
-```
-
-### Comando con parámetros
-
-**Archivo**: [`main/commands/fan_command.cpp`](main/commands/fan_command.cpp)
-
-```cpp
-#include "fan_command.h"
-#include "bunny_sdk.h"
-#include <cstring>
-
-static constexpr int FAN_PIN = 5;
-
-static void set_fan_hw(bool on) {
-    // TODO: gpio_set_level(FAN_PIN, on ? 1 : 0);
-}
-
-void register_fan_command() {
-    Bunny.command("setFanState")
-         .description("Turn the fan relay ON or OFF")
-         .param("state", STRING, "Target state: ON or OFF")
-         .affects("fanState")
-         .tag("actuator")
-         .example("{\"state\": \"ON\"}")
-         .execute([](const bunny::Params& p) {
-             const char* state = p.get_string("state");
-             set_fan_hw(strcmp(state, "ON") == 0);
-         });
-}
-```
-
-### Evento
-
-**Archivo**: [`main/events/motion_event.cpp`](main/events/motion_event.cpp)
-
-```cpp
-#include "motion_event.h"
-#include "bunny_sdk.h"
-
-static void blink_indicator_hw() {
-    // TODO: gpio_set_level(LED_PIN, 1); vTaskDelay(...); gpio_set_level(LED_PIN, 0);
-}
-
-void register_motion_event() {
-    Bunny.event("motion_detected")
-         .description("Triggered when the PIR sensor detects movement")
-         .tag("sensor")
-         .tag("security")
-         .build([]() {
-             blink_indicator_hw();
-         });
-}
-```
-
-### Estado
-
-**Archivo**: [`main/states/fan_state.cpp`](main/states/fan_state.cpp)
-
-```cpp
-#include "fan_state.h"
-#include "bunny_sdk.h"
-
-static const char* s_fan_state = "OFF";
-
-void register_fan_state() {
-    Bunny.state("fanState", STRING)
-         .description("Current fan relay state (ON or OFF)")
-         .tag("actuator")
-         .build(
-             []() -> const char* { return s_fan_state; },
-             [](const char* v)   { s_fan_state = v;    }
-         );
-}
-```
+Ver archivos de ejemplo en [`main/`](main/):
+- [Sensor](main/sensors/temperature_sensor.cpp)
+- [Comando](main/commands/fan_command.cpp)
+- [Evento](main/events/motion_event.cpp)
+- [Estado](main/states/fan_state.cpp)
 
 ---
 
 ## Patrones y Anti-patrones
 
-### ✅ Correcto
+### ✅ CORRECTO
 
 ```cpp
-// Hardware actions sólo en los hooks
-Bunny.command("setLight")
-     .description("...")
+// Buena documentación
+Bunny.command("setFanSpeed")
+     .description("Set fan speed 0-100%, supports ramping")
+     .param("speed", NUMBER, "Target speed (0-100)")
+     .param("rampTime", NUMBER, "Ramp time ms (optional)", false)
+     .affects("fanSpeed")
      .execute([](const Params& p) {
-         int brightness = (int)p.get_number("brightness");
-         gpio_set_level(LED_PIN, brightness > 0 ? 1 : 0);
+         // Solo hardware
+         int speed = (int)p.get_number("speed");
+         pwm_set(FAN_PIN, speed);
      });
-
-// Metadata completa ayuda a backend/LLM
-Bunny.sensor("humidity")
-     .description("Relative humidity percentage")
-     .returns(NUMBER)
-     .tag("climate")
-     .example("Read: 65.3")
-     .build([](){ return read_humidity(); });
 ```
 
-### ❌ Incorrecto
+### ❌ INCORRECTO
 
 ```cpp
-// NO: lógica de negocio en firmware
-Bunny.command("activateFan")
+// NUNCA: lógica de negocio
+Bunny.command("checkTemperature")
      .execute([](const Params& p) {
-         if (temperature > 25 && humidity > 60) { // REGLA DE NEGOCIO!
-             gpio_set_level(FAN_PIN, 1);
+         if (read_temp() > 30) {  // ← REGLA DE NEGOCIO!
+             activate_fan();
          }
      });
 
-// NO: metadata incompleta
-Bunny.state("data", STRING)
-     .build([](){ return ""; });  // Qué es este estado? Nadie lo sabe.
-
-// NO: parámetros sin documentación
-Bunny.command("control")
-     .param("x", STRING)  // ¿Qué es x?
-     .execute([](const Params& p) { ... });
+// Correcto: separar
+Bunny.sensor("temperature").build([](){ return read_temp(); });
+Bunny.command("activateFan").execute([](const Params& p){ activate_fan(); });
 ```
 
 ---
 
-## Construcción y Debugging
-
-### Build
+## Build y Debug
 
 ```bash
+# Compilar
 idf.py build
-```
 
-### Monitoreo
-
-```bash
+# Monitorear
 idf.py -p /dev/ttyUSB0 monitor
-```
 
-### Limpiar build
-
-```bash
+# Limpiar
 idf.py fullclean
 ```
 
@@ -668,6 +601,5 @@ idf.py fullclean
 
 ## Referencias
 
-- [Bunny Framework README](README.md)
-- [Configuración del dispositivo](config/device.json)
-- [ESP-IDF Official Docs](https://docs.espressif.com/projects/esp-idf/)
+- [Bunny README](README.md)
+- [ESP-IDF Docs](https://docs.espressif.com/projects/esp-idf/)
