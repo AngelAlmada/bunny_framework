@@ -202,4 +202,6 @@
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/perfmon/libperfmon.a
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/rt/librt.a
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/spiffs/libspiffs.a
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/libbunny.a
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main/libmain.a
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/libbunny.a

@@ -1,17 +1,22 @@
 idf_component_register(
     SRCS
-        "bunny.c"
-        "core/core.c"
-        "api/sensor.c"
-        "api/command.c"
-        "api/event.c"
-        "api/state.c"
+        # C++ SDK — entry point, builders, registry
+        "bunny_sdk.cpp"
+        # Capabilities
+        "capabilities/sensor_capability.cpp"
+        "capabilities/command_capability.cpp"
+        "capabilities/event_capability.cpp"
+        "capabilities/state_capability.cpp"
+        # Registry
+        "registry/registry.cpp"
+        # Runtime, protocol, network (stubs — to be implemented)
         "runtime/runtime.c"
         "protocol/protocol.c"
         "network/network.c"
-        "platform/esp32/platform_esp32.c"
-        "utils/utils.c"
+        "network/discovery.c"
+        # Config
         "config/config.c"
     INCLUDE_DIRS
+        "."
         "include"
 )

@@ -199,6 +199,102 @@ bunny_framework.c.s:
 	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/bunny_framework.c.s
 .PHONY : bunny_framework.c.s
 
+commands/fan_command.obj: commands/fan_command.cpp.obj
+.PHONY : commands/fan_command.obj
+
+# target to build an object file
+commands/fan_command.cpp.obj:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj
+.PHONY : commands/fan_command.cpp.obj
+
+commands/fan_command.i: commands/fan_command.cpp.i
+.PHONY : commands/fan_command.i
+
+# target to preprocess a source file
+commands/fan_command.cpp.i:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.i
+.PHONY : commands/fan_command.cpp.i
+
+commands/fan_command.s: commands/fan_command.cpp.s
+.PHONY : commands/fan_command.s
+
+# target to generate assembly for a file
+commands/fan_command.cpp.s:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.s
+.PHONY : commands/fan_command.cpp.s
+
+events/motion_event.obj: events/motion_event.cpp.obj
+.PHONY : events/motion_event.obj
+
+# target to build an object file
+events/motion_event.cpp.obj:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj
+.PHONY : events/motion_event.cpp.obj
+
+events/motion_event.i: events/motion_event.cpp.i
+.PHONY : events/motion_event.i
+
+# target to preprocess a source file
+events/motion_event.cpp.i:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.i
+.PHONY : events/motion_event.cpp.i
+
+events/motion_event.s: events/motion_event.cpp.s
+.PHONY : events/motion_event.s
+
+# target to generate assembly for a file
+events/motion_event.cpp.s:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.s
+.PHONY : events/motion_event.cpp.s
+
+sensors/temperature_sensor.obj: sensors/temperature_sensor.cpp.obj
+.PHONY : sensors/temperature_sensor.obj
+
+# target to build an object file
+sensors/temperature_sensor.cpp.obj:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj
+.PHONY : sensors/temperature_sensor.cpp.obj
+
+sensors/temperature_sensor.i: sensors/temperature_sensor.cpp.i
+.PHONY : sensors/temperature_sensor.i
+
+# target to preprocess a source file
+sensors/temperature_sensor.cpp.i:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.i
+.PHONY : sensors/temperature_sensor.cpp.i
+
+sensors/temperature_sensor.s: sensors/temperature_sensor.cpp.s
+.PHONY : sensors/temperature_sensor.s
+
+# target to generate assembly for a file
+sensors/temperature_sensor.cpp.s:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.s
+.PHONY : sensors/temperature_sensor.cpp.s
+
+states/fan_state.obj: states/fan_state.cpp.obj
+.PHONY : states/fan_state.obj
+
+# target to build an object file
+states/fan_state.cpp.obj:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj
+.PHONY : states/fan_state.cpp.obj
+
+states/fan_state.i: states/fan_state.cpp.i
+.PHONY : states/fan_state.i
+
+# target to preprocess a source file
+states/fan_state.cpp.i:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.i
+.PHONY : states/fan_state.cpp.i
+
+states/fan_state.s: states/fan_state.cpp.s
+.PHONY : states/fan_state.s
+
+# target to generate assembly for a file
+states/fan_state.cpp.s:
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build && $(MAKE) $(MAKESILENT) -f esp-idf/main/CMakeFiles/__idf_main.dir/build.make esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.s
+.PHONY : states/fan_state.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -215,6 +311,18 @@ help:
 	@echo "... bunny_framework.obj"
 	@echo "... bunny_framework.i"
 	@echo "... bunny_framework.s"
+	@echo "... commands/fan_command.obj"
+	@echo "... commands/fan_command.i"
+	@echo "... commands/fan_command.s"
+	@echo "... events/motion_event.obj"
+	@echo "... events/motion_event.i"
+	@echo "... events/motion_event.s"
+	@echo "... sensors/temperature_sensor.obj"
+	@echo "... sensors/temperature_sensor.i"
+	@echo "... sensors/temperature_sensor.s"
+	@echo "... states/fan_state.obj"
+	@echo "... states/fan_state.i"
+	@echo "... states/fan_state.s"
 .PHONY : help
 
 

@@ -1,2 +1,2 @@
-/home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-ar qc libmain.a CMakeFiles/__idf_main.dir/bunny_framework.c.obj
+/home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-ar qc libmain.a CMakeFiles/__idf_main.dir/bunny_framework.c.obj CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj
 /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-ranlib libmain.a

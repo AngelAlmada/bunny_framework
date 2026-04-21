@@ -2203,6 +2203,19 @@ __idf_spiffs/fast:
 .PHONY : __idf_spiffs/fast
 
 #=============================================================================
+# Target rules for targets named __idf_bunny
+
+# Build rule for target.
+__idf_bunny: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_bunny
+.PHONY : __idf_bunny
+
+# fast build rule for target.
+__idf_bunny/fast:
+	$(MAKE) $(MAKESILENT) -f esp-idf/bunny/CMakeFiles/__idf_bunny.dir/build.make esp-idf/bunny/CMakeFiles/__idf_bunny.dir/build
+.PHONY : __idf_bunny/fast
+
+#=============================================================================
 # Target rules for targets named __idf_main
 
 # Build rule for target.
@@ -2298,6 +2311,7 @@ help:
 	@echo "... uf2-app"
 	@echo "... __idf_app_update"
 	@echo "... __idf_bootloader_support"
+	@echo "... __idf_bunny"
 	@echo "... __idf_cmock"
 	@echo "... __idf_console"
 	@echo "... __idf_cxx"

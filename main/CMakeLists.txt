@@ -1,2 +1,12 @@
-idf_component_register(SRCS "bunny_framework.c"
-                    INCLUDE_DIRS ".")
+idf_component_register(
+    SRCS
+        "bunny_framework.c"
+        "sensors/temperature_sensor.cpp"
+        "commands/fan_command.cpp"
+        "events/motion_event.cpp"
+        "states/fan_state.cpp"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        bunny
+)

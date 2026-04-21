@@ -1,11 +1,24 @@
 {
-  "deviceId": "esp32-001",
+  "device": {
+    "id": "esp32-001",
+    "name": "Mi Dispositivo Bunny",
+    "description": "Dispositivo ESP32 gestionado por Bunny Framework",
+    "type": "esp32",
+    "version": "0.1.0",
+    "tags": []
+  },
+  "discovery": {
+    "enabled": true,
+    "udp_port": 5555,
+    "broadcast_interval_ms": 3000
+  },
+  "webhook": {
+    "port": 8080,
+    "path": "/bunny"
+  },
   "capabilities": {
     "sensors": [],
     "commands": [],
     "events": []
-  },
-  "network": {
-    "backendUrl": ""
   }
 }

@@ -83,17 +83,81 @@ esp-idf/main/CMakeFiles/__idf_main.dir/bunny_framework.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/__idf_main.dir/bunny_framework.c.s"
 	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/angelalmada/FrameworkBunny/bunny_framework/main/bunny_framework.c -o CMakeFiles/__idf_main.dir/bunny_framework.c.s
 
+esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/flags.make
+esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj: /home/angelalmada/FrameworkBunny/bunny_framework/main/sensors/temperature_sensor.cpp
+esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj -MF CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj.d -o CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj -c /home/angelalmada/FrameworkBunny/bunny_framework/main/sensors/temperature_sensor.cpp
+
+esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.i"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/angelalmada/FrameworkBunny/bunny_framework/main/sensors/temperature_sensor.cpp > CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.i
+
+esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.s"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/angelalmada/FrameworkBunny/bunny_framework/main/sensors/temperature_sensor.cpp -o CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.s
+
+esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/flags.make
+esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj: /home/angelalmada/FrameworkBunny/bunny_framework/main/commands/fan_command.cpp
+esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj -MF CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj.d -o CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj -c /home/angelalmada/FrameworkBunny/bunny_framework/main/commands/fan_command.cpp
+
+esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/__idf_main.dir/commands/fan_command.cpp.i"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/angelalmada/FrameworkBunny/bunny_framework/main/commands/fan_command.cpp > CMakeFiles/__idf_main.dir/commands/fan_command.cpp.i
+
+esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/__idf_main.dir/commands/fan_command.cpp.s"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/angelalmada/FrameworkBunny/bunny_framework/main/commands/fan_command.cpp -o CMakeFiles/__idf_main.dir/commands/fan_command.cpp.s
+
+esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/flags.make
+esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj: /home/angelalmada/FrameworkBunny/bunny_framework/main/events/motion_event.cpp
+esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj -MF CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj.d -o CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj -c /home/angelalmada/FrameworkBunny/bunny_framework/main/events/motion_event.cpp
+
+esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/__idf_main.dir/events/motion_event.cpp.i"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/angelalmada/FrameworkBunny/bunny_framework/main/events/motion_event.cpp > CMakeFiles/__idf_main.dir/events/motion_event.cpp.i
+
+esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/__idf_main.dir/events/motion_event.cpp.s"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/angelalmada/FrameworkBunny/bunny_framework/main/events/motion_event.cpp -o CMakeFiles/__idf_main.dir/events/motion_event.cpp.s
+
+esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/flags.make
+esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj: /home/angelalmada/FrameworkBunny/bunny_framework/main/states/fan_state.cpp
+esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj: esp-idf/main/CMakeFiles/__idf_main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj -MF CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj.d -o CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj -c /home/angelalmada/FrameworkBunny/bunny_framework/main/states/fan_state.cpp
+
+esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/__idf_main.dir/states/fan_state.cpp.i"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/angelalmada/FrameworkBunny/bunny_framework/main/states/fan_state.cpp > CMakeFiles/__idf_main.dir/states/fan_state.cpp.i
+
+esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/__idf_main.dir/states/fan_state.cpp.s"
+	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && /home/angelalmada/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/angelalmada/FrameworkBunny/bunny_framework/main/states/fan_state.cpp -o CMakeFiles/__idf_main.dir/states/fan_state.cpp.s
+
 # Object files for target __idf_main
 __idf_main_OBJECTS = \
-"CMakeFiles/__idf_main.dir/bunny_framework.c.obj"
+"CMakeFiles/__idf_main.dir/bunny_framework.c.obj" \
+"CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj" \
+"CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj" \
+"CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj" \
+"CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj"
 
 # External object files for target __idf_main
 __idf_main_EXTERNAL_OBJECTS =
 
 esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/bunny_framework.c.obj
+esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/sensors/temperature_sensor.cpp.obj
+esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/commands/fan_command.cpp.obj
+esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/events/motion_event.cpp.obj
+esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/states/fan_state.cpp.obj
 esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/build.make
 esp-idf/main/libmain.a: esp-idf/main/CMakeFiles/__idf_main.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libmain.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/angelalmada/FrameworkBunny/bunny_framework/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking C static library libmain.a"
 	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && $(CMAKE_COMMAND) -P CMakeFiles/__idf_main.dir/cmake_clean_target.cmake
 	cd /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/__idf_main.dir/link.txt --verbose=$(VERBOSE)
 

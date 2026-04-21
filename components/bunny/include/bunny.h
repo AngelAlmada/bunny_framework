@@ -1,13 +1,20 @@
 #pragma once
 
 /**
- * Bunny Framework - Public API
+ * bunny.h — C-compatible public entry points for the Bunny Framework.
  *
- * Entry points to initialize and run the Bunny runtime on ESP32.
- * No logic lives here — the ESP32 only exposes capabilities and
- * responds to instructions from the backend.
+ * Use this in .c files (e.g. app_main).
+ * For capability registration in C++ modules, include <bunny_sdk.h> instead.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void bunny_begin(void);
 void bunny_load_modules(void);
 void bunny_loop(void);
+
+#ifdef __cplusplus
+}
+#endif

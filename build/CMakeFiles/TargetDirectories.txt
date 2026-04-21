@@ -1145,6 +1145,13 @@
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/ulp/CMakeFiles/install.dir
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/ulp/CMakeFiles/install/local.dir
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/ulp/CMakeFiles/install/strip.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/__idf_bunny.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/edit_cache.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/rebuild_cache.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/list_install_components.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/install.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/install/local.dir
+/home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/bunny/CMakeFiles/install/strip.dir
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main/CMakeFiles/__idf_main.dir
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main/CMakeFiles/edit_cache.dir
 /home/angelalmada/FrameworkBunny/bunny_framework/build/esp-idf/main/CMakeFiles/rebuild_cache.dir
