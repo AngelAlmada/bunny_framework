@@ -24,7 +24,7 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 
 ---
 
-## Sistema de Tipos
+## Sistema de Tipos ([Type system](GLOSARIO.md#comunicación-y-datos))
 
 **Archivo**: [`components/bunny/types/bunny_types.h`](components/bunny/types/bunny_types.h)
 
@@ -32,9 +32,9 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 
 Bunny necesita saber qué tipo de datos espera y devuelve cada capacidad para:
 
-1. **Validación en el motor de procesos**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
+1. **Validación en el [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base)**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
 2. **Documentación automática**: El LLM o herramientas de generación saben exactamente qué esperar.
-3. **Serialización segura**: JSON permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
+3. **[Serialización](GLOSARIO.md#comunicación-y-datos) segura**: [JSON](GLOSARIO.md#comunicación-y-datos) permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
 4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el motor de procesos espera STRING, lo sabremos inmediatamente.
 
 ### Tipos definidos
@@ -122,13 +122,13 @@ Bunny.command("reset")
 
 ---
 
-## Metadata Semántica
+## [Metadata Semántica](GLOSARIO.md#comunicación-y-datos)
 
 **Archivo**: [`components/bunny/metadata/metadata.h`](components/bunny/metadata/metadata.h)
 
 ### ¿Qué es la metadata y por qué es crítica?
 
-La **metadata es el contrato semántico** que describe qué hace cada capacidad, qué parámetros acepta, qué retorna, y cómo se relaciona con otras capacidades.
+La **metadata es el [contrato](GLOSARIO.md#arquitectura-y-conceptos-base) semántico** que describe qué hace cada capacidad, qué parámetros acepta, qué retorna, y cómo se relaciona con otras capacidades.
 
 Es crítica porque:
 
@@ -240,13 +240,13 @@ Registry::instance().register_capability(&sensor);
 
 ---
 
-## Contratos Base de Capacidades
+## Contratos Base de [Capacidades](GLOSARIO.md#capacidades-del-sdk)
 
 **Archivo**: [`components/bunny/core/capability.h`](components/bunny/core/capability.h)
 
 ### ¿Qué es un contrato base?
 
-Un contrato base (interfaz) define la forma en que **todas** las capacidades se comportan, sin importar su tipo específico.
+Un [contrato](GLOSARIO.md#arquitectura-y-conceptos-base) base (interfaz) define la forma en que **todas** las capacidades se comportan, sin importar su tipo específico.
 
 Piénsalo como un "acuerdo":
 - Toda capacidad tiene un nombre.
@@ -290,7 +290,7 @@ enum class CapabilityKind : uint8_t {
 
 ---
 
-## Fluent Builder API
+## [Fluent API](GLOSARIO.md#diseño-de-api-y-código) y [Builder](GLOSARIO.md#diseño-de-api-y-código)
 
 **Archivos**: [`components/bunny/builder/`](components/bunny/builder/)
 
@@ -375,17 +375,17 @@ Bunny.state("fanState", STRING)
 
 ---
 
-## Registro Central (Registry)
+## Registro Central ([Registry](GLOSARIO.md#capacidades-del-sdk))
 
 **Archivo**: [`components/bunny/registry/registry.h`](components/bunny/registry/registry.h)
 
 ### ¿Por qué un Registry?
 
-El Registry es un **índice centralizado** que permite:
+El [Registry](GLOSARIO.md#capacidades-del-sdk) es un **índice centralizado** que permite:
 - Almacenar todas las capacidades (sensores, comandos, eventos, states).
 - Buscar una capacidad por nombre y tipo.
 - Serializar todo a JSON para enviar al motor de procesos.
-- Despachar comandos a sus hooks de ejecución.
+- Despachar comandos a sus [hooks](GLOSARIO.md#diseño-de-api-y-código) de ejecución.
 
 Cuando el motor de procesos envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
 
@@ -476,7 +476,7 @@ void app_main(void) {
 
 ---
 
-## Serialización JSON
+## [Serialización](GLOSARIO.md#comunicación-y-datos) [JSON](GLOSARIO.md#comunicación-y-datos)
 
 Bunny **no usa bibliotecas externas** para JSON. Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
 
@@ -493,7 +493,7 @@ Cada capacidad implementa `serialize()` que genera su JSON:
 }
 ```
 
-El Registry combina todos en un manifest:
+El Registry combina todos en un [manifest de capacidades](GLOSARIO.md#comunicación-y-datos):
 
 ```json
 {
@@ -506,9 +506,9 @@ El Registry combina todos en un manifest:
 
 ---
 
-## Protocolo de Comunicación
+## Protocolo de Comunicación ([JSON](GLOSARIO.md#comunicación-y-datos) / [DSL](GLOSARIO.md#comunicación-y-datos))
 
-Mensajes JSON esperados entre motor de procesos y ESP32:
+Mensajes JSON esperados entre [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) y ESP32:
 
 ### Comando
 
@@ -613,4 +613,4 @@ idf.py fullclean
 
 ## Glosario de términos
 
-Para definiciones rápidas de términos como Fluent API, DSL, hooks, Registry, runtime y otros conceptos usados en esta guía, consulta [GLOSARIO.md](GLOSARIO.md).
+Para definiciones rápidas de términos como [Fluent API](GLOSARIO.md#diseño-de-api-y-código), [DSL](GLOSARIO.md#comunicación-y-datos), [hooks](GLOSARIO.md#diseño-de-api-y-código), [Registry](GLOSARIO.md#capacidades-del-sdk), [runtime](GLOSARIO.md#operación-en-esp32) y otros conceptos usados en esta guía, consulta [GLOSARIO.md](GLOSARIO.md).
