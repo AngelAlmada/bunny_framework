@@ -2,6 +2,8 @@
 
 Documento técnico para desarrolladores que extienden o mantienen el framework Bunny.
 
+Última actualización: 21 de abril de 2026.
+
 **← [Volver al README](README.md)**
 
 ## Índice
