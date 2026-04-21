@@ -24,7 +24,7 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 
 ---
 
-## Sistema de Tipos ([Type system](GLOSARIO.md#comunicación-y-datos))
+## Sistema de Tipos ([Type system](GLOSARIO.md#term-type-system))
 
 **Archivo**: [`components/bunny/types/bunny_types.h`](components/bunny/types/bunny_types.h)
 
@@ -32,9 +32,9 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 
 Bunny necesita saber qué tipo de datos espera y devuelve cada capacidad para:
 
-1. **Validación en el [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base)**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
-2. **Documentación automática**: El [LLM](GLOSARIO.md#comunicación-y-datos) o herramientas de generación saben exactamente qué esperar.
-3. **[Serialización](GLOSARIO.md#comunicación-y-datos) segura**: [JSON](GLOSARIO.md#comunicación-y-datos) permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
+1. **Validación en el [motor de procesos](GLOSARIO.md#term-motor-procesos)**: Antes de enviar un comando, el motor de procesos valida que los parámetros coinciden con los tipos esperados.
+2. **Documentación automática**: El [LLM](GLOSARIO.md#term-llm) o herramientas de generación saben exactamente qué esperar.
+3. **[Serialización](GLOSARIO.md#term-serializacion) segura**: [JSON](GLOSARIO.md#term-json) permite cualquier tipo, pero nosotros queremos asegurarnos de conversiones correctas.
 4. **Prevención de errores**: Si un sensor devuelve un NUMBER y el motor de procesos espera STRING, lo sabremos inmediatamente.
 
 ### Tipos definidos
@@ -52,7 +52,7 @@ enum class Type : uint8_t {
 };
 ```
 
-**Nota**: OBJECT y ARRAY se serializan como strings [JSON](GLOSARIO.md#comunicación-y-datos) en la [metadata](GLOSARIO.md#comunicación-y-datos), pero el [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) puede parsearlos según necesite.
+**Nota**: OBJECT y ARRAY se serializan como strings [JSON](GLOSARIO.md#term-json) en la [metadata](GLOSARIO.md#term-metadata-semantica), pero el [motor de procesos](GLOSARIO.md#term-motor-procesos) puede parsearlos según necesite.
 
 ### Alias globales para la Fluent API
 
@@ -94,7 +94,7 @@ inline const char* type_name(Type t) {
 }
 ```
 
-Se usa internamente para serializar a [JSON](GLOSARIO.md#comunicación-y-datos) (ej: `"returns":"number"`).
+Se usa internamente para serializar a [JSON](GLOSARIO.md#term-json) (ej: `"returns":"number"`).
 
 ### Ejemplo de uso
 
@@ -122,19 +122,19 @@ Bunny.command("reset")
 
 ---
 
-## [Metadata Semántica](GLOSARIO.md#comunicación-y-datos)
+## [Metadata Semántica](GLOSARIO.md#term-metadata-semantica)
 
 **Archivo**: [`components/bunny/metadata/metadata.h`](components/bunny/metadata/metadata.h)
 
 ### ¿Qué es la metadata y por qué es crítica?
 
-La **metadata es el [contrato](GLOSARIO.md#arquitectura-y-conceptos-base) semántico** que describe qué hace cada capacidad, qué parámetros acepta, qué retorna, y cómo se relaciona con otras capacidades.
+La **metadata es el [contrato](GLOSARIO.md#term-contrato) semántico** que describe qué hace cada capacidad, qué parámetros acepta, qué retorna, y cómo se relaciona con otras capacidades.
 
 Es crítica porque:
 
-1. **El [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) no tiene el código**: El motor de procesos solo conoce lo que tú declaras en metadata.
-2. **[LLM](GLOSARIO.md#comunicación-y-datos) puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
-3. **[Validación estructurada](GLOSARIO.md#comunicación-y-datos)**: Las herramientas pueden validar invocaciones contra la metadata.
+1. **El [motor de procesos](GLOSARIO.md#term-motor-procesos) no tiene el código**: El motor de procesos solo conoce lo que tú declaras en metadata.
+2. **[LLM](GLOSARIO.md#term-llm) puede razonar sobre capacidades**: Si documentas bien, un modelo de lenguaje puede usar las capacidades automáticamente.
+3. **[Validación estructurada](GLOSARIO.md#term-validacion-estructurada)**: Las herramientas pueden validar invocaciones contra la metadata.
 4. **Generación de UI**: El motor de procesos puede generar interfaces automáticamente.
 5. **Debugging**: Cuando algo falla, la metadata ayuda a entender qué salió mal.
 
@@ -194,7 +194,7 @@ Estos límites existen para:
 
 ### Cómo rellenar metadata
 
-#### Opción 1: Con [Builders](GLOSARIO.md#diseño-de-api-y-código) (RECOMENDADO)
+#### Opción 1: Con [Builders](GLOSARIO.md#term-builder) (RECOMENDADO)
 
 Bunny maneja todo automáticamente:
 
@@ -240,13 +240,13 @@ Registry::instance().register_capability(&sensor);
 
 ---
 
-## Contratos Base de [Capacidades](GLOSARIO.md#capacidades-del-sdk)
+## Contratos Base de [Capacidades](GLOSARIO.md#term-capability)
 
 **Archivo**: [`components/bunny/core/capability.h`](components/bunny/core/capability.h)
 
 ### ¿Qué es un contrato base?
 
-Un [contrato](GLOSARIO.md#arquitectura-y-conceptos-base) base (interfaz) define la forma en que **todas** las capacidades se comportan, sin importar su tipo específico.
+Un [contrato](GLOSARIO.md#term-contrato) base (interfaz) define la forma en que **todas** las capacidades se comportan, sin importar su tipo específico.
 
 Piénsalo como un "acuerdo":
 - Toda capacidad tiene un nombre.
@@ -290,7 +290,7 @@ enum class CapabilityKind : uint8_t {
 
 ---
 
-## [Fluent API](GLOSARIO.md#diseño-de-api-y-código) y [Builder](GLOSARIO.md#diseño-de-api-y-código)
+## [Fluent API](GLOSARIO.md#term-fluent-api) y [Builder](GLOSARIO.md#term-builder)
 
 **Archivos**: [`components/bunny/builder/`](components/bunny/builder/)
 
@@ -375,21 +375,21 @@ Bunny.state("fanState", STRING)
 
 ---
 
-## Registro Central ([Registry](GLOSARIO.md#capacidades-del-sdk))
+## Registro Central ([Registry](GLOSARIO.md#term-registry))
 
 **Archivo**: [`components/bunny/registry/registry.h`](components/bunny/registry/registry.h)
 
 ### ¿Por qué un Registry?
 
-El [Registry](GLOSARIO.md#capacidades-del-sdk) es un **índice centralizado** que permite:
+El [Registry](GLOSARIO.md#term-registry) es un **índice centralizado** que permite:
 - Almacenar todas las capacidades (sensores, comandos, eventos, states).
 - Buscar una capacidad por nombre y tipo.
 - Serializar todo a JSON para enviar al motor de procesos.
-- Despachar comandos a sus [hooks](GLOSARIO.md#diseño-de-api-y-código) de ejecución.
+- Despachar comandos a sus [hooks](GLOSARIO.md#term-hook) de ejecución.
 
 Cuando el motor de procesos envía `setFanSpeed`, el Registry busca esa capacidad y la ejecuta.
 
-### [Singleton](GLOSARIO.md#diseño-de-api-y-código) Pattern
+### [Singleton](GLOSARIO.md#term-singleton) Pattern
 
 ```cpp
 static Registry& instance() {
@@ -476,9 +476,9 @@ void app_main(void) {
 
 ---
 
-## [Serialización](GLOSARIO.md#comunicación-y-datos) [JSON](GLOSARIO.md#comunicación-y-datos)
+## [Serialización](GLOSARIO.md#term-serializacion) [JSON](GLOSARIO.md#term-json)
 
-Bunny **no usa bibliotecas externas** para [JSON](GLOSARIO.md#comunicación-y-datos). Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
+Bunny **no usa bibliotecas externas** para [JSON](GLOSARIO.md#term-json). Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
 
 Cada capacidad implementa `serialize()` que genera su JSON:
 
@@ -493,7 +493,7 @@ Cada capacidad implementa `serialize()` que genera su JSON:
 }
 ```
 
-El Registry combina todos en un [manifest de capacidades](GLOSARIO.md#comunicación-y-datos):
+El Registry combina todos en un [manifest de capacidades](GLOSARIO.md#term-manifest-capacidades):
 
 ```json
 {
@@ -506,9 +506,9 @@ El Registry combina todos en un [manifest de capacidades](GLOSARIO.md#comunicaci
 
 ---
 
-## Protocolo de Comunicación ([JSON](GLOSARIO.md#comunicación-y-datos) / [DSL](GLOSARIO.md#comunicación-y-datos))
+## Protocolo de Comunicación ([JSON](GLOSARIO.md#term-json) / [DSL](GLOSARIO.md#term-dsl))
 
-Mensajes JSON esperados entre [motor de procesos](GLOSARIO.md#arquitectura-y-conceptos-base) y ESP32:
+Mensajes JSON esperados entre [motor de procesos](GLOSARIO.md#term-motor-procesos) y ESP32:
 
 ### Comando
 
@@ -613,4 +613,4 @@ idf.py fullclean
 
 ## Glosario de términos
 
-Para definiciones rápidas de términos como [Fluent API](GLOSARIO.md#diseño-de-api-y-código), [DSL](GLOSARIO.md#comunicación-y-datos), [hooks](GLOSARIO.md#diseño-de-api-y-código), [Registry](GLOSARIO.md#capacidades-del-sdk), [runtime](GLOSARIO.md#operación-en-esp32) y otros conceptos usados en esta guía, consulta [GLOSARIO.md](GLOSARIO.md).
+Para definiciones rápidas de términos como [Fluent API](GLOSARIO.md#term-fluent-api), [DSL](GLOSARIO.md#term-dsl), [hooks](GLOSARIO.md#term-hook), [Registry](GLOSARIO.md#term-registry), [runtime](GLOSARIO.md#term-runtime) y otros conceptos usados en esta guía, consulta [GLOSARIO.md](GLOSARIO.md).
