@@ -1,0 +1,17 @@
+idf_component_register(
+    SRCS
+        "bunny.c"
+        "core/core.c"
+        "api/sensor.c"
+        "api/command.c"
+        "api/event.c"
+        "api/state.c"
+        "runtime/runtime.c"
+        "protocol/protocol.c"
+        "network/network.c"
+        "platform/esp32/platform_esp32.c"
+        "utils/utils.c"
+        "config/config.c"
+    INCLUDE_DIRS
+        "include"
+)

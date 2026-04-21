@@ -1,0 +1,2 @@
+source /home/angelalmada/FrameworkBunny/bunny_framework/build/bootloader/gdbinit/symbols
+source /home/angelalmada/FrameworkBunny/bunny_framework/build/bootloader/gdbinit/connect

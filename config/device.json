@@ -1,0 +1,11 @@
+{
+  "deviceId": "esp32-001",
+  "capabilities": {
+    "sensors": [],
+    "commands": [],
+    "events": []
+  },
+  "network": {
+    "backendUrl": ""
+  }
+}
