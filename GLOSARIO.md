@@ -51,163 +51,243 @@ Documento de referencia rápida para desarrolladores que se integran al proyecto
 
 <a id="term-arquitectura-declarativa"></a>
 ### Arquitectura declarativa
-Estilo donde se describe qué puede hacer el dispositivo (capacidades), en lugar de programar en el dispositivo todas las decisiones de cuándo y por qué ejecutarlas.
+Enfoque donde el firmware describe capacidades (qué puede hacer) en vez de definir reglas de negocio (cuándo y por qué hacerlo).
+En Bunny esto evita acoplar decisiones al ESP32 y facilita que el motor de procesos cambie comportamientos sin reflashear.
+Ejemplo: declarar `setFanState` como comando, mientras la condición "si temperatura > 28" vive fuera del firmware.
 
 <a id="term-bunny-framework"></a>
 ### Bunny Framework
-Conjunto de componentes para ESP32 que permite declarar capacidades de hardware (sensores, comandos, eventos y estados) para que un motor de procesos externo decida la lógica.
+Framework para ESP32 centrado en exponer capacidades de hardware de forma tipada y documentada.
+Su objetivo es separar ejecución de hardware (device) y orquestación lógica (motor de procesos).
+Incluye SDK, registro de capacidades, serialización y base de comunicación.
 
 <a id="term-builder"></a>
 ### Builder
-Objeto que construye una capacidad paso a paso antes de registrarla. En Bunny: `SensorBuilder`, `CommandBuilder`, `EventBuilder`, `StateBuilder`.
+Patrón que permite construir una capacidad paso a paso con métodos encadenables.
+En Bunny mejora legibilidad y reduce errores de configuración al declarar metadata.
+Ejemplo: `Bunny.command("setFan").param("state", STRING).execute(...)`.
 
 <a id="term-capability"></a>
 ### Capability (Capacidad)
-Unidad declarativa que representa algo que el dispositivo puede exponer o ejecutar.
+Unidad funcional declarada por el dispositivo.
+Cada capacidad tiene identidad (`name`), tipo (`kind`) y metadata semántica.
+Puede representar lectura (sensor), acción (command), notificación (event) o memoria de estado (state).
 
 <a id="term-capabilitykind"></a>
 ### CapabilityKind
-Enum que clasifica las capacidades: `SENSOR`, `COMMAND`, `EVENT`, `STATE`.
+Enum interno que clasifica capacidades por comportamiento.
+Permite al Registry filtrar y despachar correctamente.
+Valores actuales: `SENSOR`, `COMMAND`, `EVENT`, `STATE`.
 
 <a id="term-command"></a>
 ### Command
-Capacidad que ejecuta una acción de hardware al recibir parámetros. Ejemplo: encender ventilador.
+Capacidad orientada a ejecutar acciones sobre hardware.
+Recibe parámetros tipados, valida estructura y llama un `execute hook`.
+Ejemplo: `setFanState(state: STRING)` para activar o desactivar un relé.
 
 <a id="term-contrato"></a>
 ### Contrato
-Acuerdo formal sobre estructura de datos y comportamientos esperados. En Bunny, metadata + tipos + nombres de capacidades forman el contrato con el motor de procesos.
+Acuerdo técnico que define cómo debe invocarse una capacidad y qué respuesta esperar.
+En Bunny lo forman nombre de capacidad, tipos, metadata y formato JSON.
+Si el contrato está incompleto, la integración con motor de procesos y herramientas se vuelve frágil.
 
 <a id="term-deserializacion"></a>
 ### Deserialización
-Proceso de convertir JSON entrante a estructuras de datos internas (por ejemplo, parámetros de comando).
+Proceso de convertir un mensaje JSON recibido en estructuras internas del firmware.
+Es clave para mapear parámetros remotos a `Params` y validarlos por tipo.
+Ejemplo: `{ "state": "ON" }` se convierte en claves/valores consumibles por `CommandExecuteFn`.
 
 <a id="term-discovery-udp"></a>
 ### Discovery UDP
-Mecanismo de descubrimiento en red local para anunciar identidad y datos de conexión del dispositivo.
+Mecanismo de anuncio en red local para que el motor detecte dispositivos sin configuración manual.
+El dispositivo emite su identidad y endpoint de comunicación periódicamente.
+Ejemplo: broadcast con `deviceId`, `name`, `ip`, `webhook_port` y `webhook_path`.
 
 <a id="term-dsl"></a>
 ### DSL (Domain-Specific Language)
-Lenguaje específico del dominio. En Bunny, el JSON actúa como DSL para describir capacidades y procesos.
+Lenguaje diseñado para un dominio concreto.
+En Bunny, el JSON se usa como DSL para describir capacidades y mensajes operativos.
+Permite que el motor de procesos razone sin depender de código nativo del ESP32.
 
 <a id="term-edge-device"></a>
 ### Edge device
-Dispositivo en el borde (ESP32) cercano al hardware físico.
+Dispositivo que ejecuta cerca del mundo físico (sensores/actuadores).
+En Bunny, el edge device es el ESP32 que realiza acciones y lecturas reales.
+Su rol no es decidir reglas complejas, sino exponer y ejecutar capacidades.
 
 <a id="term-emit-hook"></a>
 ### Emit hook
-Callback opcional al emitir eventos (`EventEmitFn`) para efectos locales (por ejemplo, blink LED).
+Callback opcional ligado a un evento al momento de emitirlo.
+Sirve para efectos locales de hardware sin introducir lógica de negocio.
+Ejemplo: parpadear un LED al emitir `motion_detected`.
 
 <a id="term-esp-idf"></a>
 ### ESP-IDF
-Framework oficial de Espressif para desarrollo en ESP32.
+SDK oficial de Espressif para construir firmware en ESP32.
+Provee toolchain, RTOS, drivers, red, build system y utilidades de flash/monitor.
+Bunny se integra sobre esta base como componente del proyecto.
 
 <a id="term-event"></a>
 ### Event
-Capacidad que notifica que algo ocurrió. Ejemplo: movimiento detectado.
+Capacidad para reportar que ocurrió un hecho relevante.
+Generalmente se dispara desde interrupciones o tareas de monitoreo.
+Ejemplo: `motion_detected` al superar umbral de un PIR.
 
 <a id="term-execute-hook"></a>
 ### Execute hook
-Callback que ejecuta una acción de hardware para un comando (`CommandExecuteFn`).
+Función callback que implementa la ejecución física de un comando.
+Recibe parámetros ya parseados y ejecuta operaciones de hardware.
+Ejemplo: escribir GPIO, PWM o I2C en respuesta a `setFanSpeed`.
 
 <a id="term-firmware"></a>
 ### Firmware
-Software embebido que corre en el microcontrolador.
+Software embebido compilado y cargado en el microcontrolador.
+En Bunny, el firmware contiene capacidades, hooks y transporte; no reglas de negocio complejas.
+Se actualiza con build + flash del proyecto ESP-IDF.
 
 <a id="term-fluent-api"></a>
 ### Fluent API
-Patrón de diseño que permite encadenar métodos para construir definiciones legibles. Ejemplo: `Bunny.sensor(...).description(...).returns(...).build(...)`.
+Estilo de API que encadena métodos para construir definiciones legibles y consistentes.
+En Bunny acelera onboarding y hace más clara la intención del desarrollador.
+Ejemplo: `Bunny.sensor("temperature").description(...).returns(NUMBER).build(...)`.
 
 <a id="term-getter-setter-estado"></a>
 ### Getter/Setter de estado
-Callbacks para leer y escribir un estado (`StateGetFn`, `StateSetFn`).
+Callbacks para exponer lectura y escritura de un estado interno.
+Permiten que el motor de procesos consulte o actualice valores persistentes del dispositivo.
+Ejemplo: `fanState` con getter que devuelve "ON/OFF" y setter que actualiza la variable.
 
 <a id="term-hook"></a>
 ### Hook
-Función callback conectada a una capacidad para ejecutar comportamiento de hardware.
+Punto de extensión donde se conecta lógica de hardware concreta.
+Bunny define hooks por tipo de capacidad (read, execute, emit, getter/setter).
+Su función es ejecutar hardware, no implementar reglas de negocio.
 
 <a id="term-icapability"></a>
 ### ICapability
-Interfaz base común para todas las capacidades. Define métodos como tipo (`kind`), nombre (`name`), metadata y serialización.
+Interfaz base que estandariza todas las capacidades del framework.
+Garantiza que cada capacidad tenga identidad, metadata y serialización consistente.
+Permite al Registry tratarlas de forma polimórfica.
 
 <a id="term-json"></a>
 ### JSON
-Formato de intercambio de datos usado para capacidades, comandos, eventos y respuestas.
+Formato de texto estructurado usado para mensajería entre device y motor de procesos.
+Bunny lo usa para manifest de capacidades, comandos entrantes y eventos salientes.
+Su ventaja es interoperabilidad y fácil inspección en logs.
 
 <a id="term-llm"></a>
 ### LLM (Large Language Model)
-Modelo de lenguaje de gran escala que puede interpretar metadata y contratos para sugerir acciones, generar procesos o asistir en integración, siempre que las capacidades estén bien documentadas.
+Modelo de lenguaje capaz de comprender texto y estructuras semánticas.
+En Bunny puede asistir en integración o generación de procesos si la metadata es clara y completa.
+Sin metadata precisa, el LLM tiende a inferir mal parámetros o comportamientos.
 
 <a id="term-logica-negocio"></a>
 ### Lógica de negocio
-Conjunto de reglas de decisión (por ejemplo, condiciones y flujos). En Bunny, debe vivir en el motor de procesos, no en el firmware del ESP32.
+Conjunto de decisiones del dominio: reglas, condiciones, transiciones y prioridades.
+En esta arquitectura debe residir fuera del firmware, dentro del motor de procesos.
+Ejemplo: "si temperatura > 30 y horario nocturno, activar ventilación".
 
 <a id="term-manifest-capacidades"></a>
 ### Manifest de capacidades
-JSON que lista las capacidades registradas del dispositivo (`sensors`, `commands`, `events`, `states`).
+Documento JSON que describe todo lo que el dispositivo expone.
+Es la base de descubrimiento e integración automática del motor de procesos.
+Incluye categorías como `sensors`, `commands`, `events` y `states`.
 
 <a id="term-metadata-semantica"></a>
 ### Metadata semántica
-Información descriptiva de una capacidad: `description`, `params`, `returns`, `tags`, `affects`, `example`.
+Descripción estructurada que explica cómo usar correctamente una capacidad.
+Debe incluir intención, parámetros, retorno y contexto para validación y automatización.
+Campos típicos: `description`, `params`, `returns`, `tags`, `affects`, `example`.
 
 <a id="term-mock-runtime"></a>
 ### Mock runtime
-Modo simulado para probar comportamiento sin hardware real.
+Entorno de simulación que replica la ejecución del runtime sin depender de placa física.
+Permite pruebas tempranas, demos y depuración rápida de contratos y mensajes.
+Reduce tiempos de desarrollo cuando el hardware no está disponible.
 
 <a id="term-motor-procesos"></a>
 ### Motor de procesos
-Sistema externo que define reglas, flujos, condiciones y transiciones. No es un backend web tradicional; su rol principal es orquestar procesos y enviar instrucciones declarativas al dispositivo.
+Sistema externo que orquesta procesos, reglas y transiciones del dominio.
+No se limita a ser un backend CRUD; su función principal es decidir comportamiento operativo.
+Consume capacidades del dispositivo y emite instrucciones declarativas hacia el edge.
 
 <a id="term-paramdef"></a>
 ### ParamDef
-Definición tipada de un parámetro de entrada (`name`, `type`, `description`, `required`).
+Estructura que describe un parámetro de entrada de forma explícita.
+Define nombre, tipo, descripción y obligatoriedad para validación consistente.
+Es parte central de la metadata de comandos y eventos.
 
 <a id="term-read-hook"></a>
 ### Read hook
-Callback que lee hardware para un sensor (`SensorReadFn`).
+Callback de lectura asociado a un sensor.
+Se ejecuta cuando el runtime o motor solicita el valor actual.
+Ejemplo: leer ADC de temperatura y devolver un `double`.
 
 <a id="term-registry"></a>
 ### Registry
-Registro central donde se almacenan todas las capacidades declaradas para búsqueda y serialización del manifiesto.
+Componente que almacena y organiza todas las capacidades registradas en memoria.
+Permite lookup por nombre/tipo y construcción del manifest JSON.
+Es pieza clave para despacho de comandos y exposición de catálogo del dispositivo.
 
 <a id="term-runtime"></a>
 ### Runtime
-Ciclo de ejecución del firmware que atiende comunicación, despacha requests y ejecuta hooks de capacidades.
+Ciclo operativo del firmware durante la ejecución continua del dispositivo.
+Coordina recepción de mensajes, validación, despacho y ejecución de hooks.
+En Bunny debe mantenerse enfocado en operación técnica, no en reglas de negocio.
 
 <a id="term-sensor"></a>
 ### Sensor
-Capacidad que produce datos (lectura). Ejemplo: temperatura, humedad, voltaje.
+Capacidad de lectura que produce un valor medible del entorno o hardware.
+Suele exponer unidades claras y tipo de retorno definido en metadata.
+Ejemplos: temperatura, humedad, corriente, batería.
 
 <a id="term-separacion-responsabilidades"></a>
 ### Separación de responsabilidades (edge vs motor)
-Principio por el cual el ESP32 ejecuta acciones de hardware y el motor de procesos toma decisiones de alto nivel.
+Principio arquitectónico que divide responsabilidades por capa.
+El edge ejecuta hardware y el motor de procesos decide flujos y reglas del dominio.
+Esta separación reduce acoplamiento y mejora escalabilidad y mantenibilidad.
 
 <a id="term-serializacion"></a>
 ### Serialización
-Proceso de convertir estructuras en memoria a JSON para enviarlas al motor de procesos.
+Proceso de transformar estructuras internas a formato JSON transportable.
+Se utiliza para publicar capacidades, respuestas y eventos.
+Debe preservar contrato y tipos para evitar errores de interpretación remota.
 
 <a id="term-singleton"></a>
 ### Singleton
-Patrón de diseño que garantiza una sola instancia global (por ejemplo, `Registry::instance()`).
+Patrón que garantiza una única instancia compartida en toda la aplicación.
+En Bunny simplifica acceso global a componentes como el Registry.
+Debe usarse con cuidado para evitar dependencias globales difíciles de testear.
 
 <a id="term-state"></a>
 ### State
-Capacidad que mantiene un valor interno legible/escribible por el motor de procesos. Ejemplo: fanState.
+Capacidad que almacena un valor interno persistente o semipersistente.
+Puede leerse o actualizarse desde el motor de procesos según el contrato definido.
+Ejemplo: `fanState`, `operatingMode`, `lastCommand`.
 
 <a id="term-type-safety"></a>
 ### Type safety (tipado fuerte)
-Uso explícito de tipos para reducir errores de integración entre firmware y motor de procesos.
+Práctica de definir tipos explícitos para parámetros y retornos.
+Disminuye errores en integración, validación y ejecución remota.
+En Bunny se apoya en `Type`, `ParamDef` y metadata estructurada.
 
 <a id="term-type-system"></a>
 ### Type system
-Sistema de tipos del SDK: `NUMBER`, `STRING`, `BOOLEAN`, `OBJECT`, `ARRAY`, `VOID`.
+Conjunto oficial de tipos permitidos por el SDK para contratos de capacidades.
+Uniforma interpretación entre firmware, motor de procesos y herramientas.
+Tipos actuales: `NUMBER`, `STRING`, `BOOLEAN`, `OBJECT`, `ARRAY`, `VOID`.
 
 <a id="term-validacion-estructurada"></a>
 ### Validación estructurada
-Verificación de que mensajes y parámetros cumplen el contrato de tipos y metadata.
+Proceso de comprobar que un mensaje cumple formato, campos requeridos y tipos esperados.
+Evita ejecutar acciones inválidas o incompletas en el dispositivo.
+Se basa en metadata semántica y definición de parámetros (`ParamDef`).
 
 <a id="term-webhook"></a>
 ### Webhook
-Endpoint HTTP expuesto por el dispositivo para recibir instrucciones o notificaciones desde el motor de procesos.
+Punto HTTP del dispositivo para intercambio de mensajes con el motor de procesos.
+Puede usarse para recibir comandos, confirmar ejecución o exponer callbacks.
+Normalmente se anuncia junto al discovery para conexión automática.
 
 ---
 
