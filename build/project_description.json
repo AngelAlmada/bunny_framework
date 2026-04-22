@@ -1,7 +1,7 @@
 {
     "version":            "1.3",
     "project_name":       "bunny_framework",
-    "project_version":    "aa00608-dirty",
+    "project_version":    "1ff26ed-dirty",
     "project_path":       "/home/angelalmada/FrameworkBunny/bunny_framework",
     "idf_path":           "/home/angelalmada/esp/esp-idf",
     "build_dir":          "/home/angelalmada/FrameworkBunny/bunny_framework/build",

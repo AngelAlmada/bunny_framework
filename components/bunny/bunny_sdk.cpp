@@ -1,6 +1,9 @@
 #include "bunny_sdk.h"
 #include "config/config.h"
 #include "network/discovery.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <cstdio>
 #include <cstring>
 
@@ -8,6 +11,8 @@
 // Placed here so all builders share one translation unit and avoid link issues.
 
 namespace bunny {
+
+static const char* TAG = "bunny";
 
 // SensorBuilder
 SensorCapability* SensorBuilder::build(SensorReadFn read_fn) {
@@ -48,6 +53,7 @@ BunnySDK& BunnySDK::instance() {
 void BunnySDK::begin() {
     bunny_config_load();
     bunny_discovery_init();
+    ESP_LOGI(TAG, "Bunny framework initialized");
 }
 
 void BunnySDK::load_modules() {
@@ -56,7 +62,13 @@ void BunnySDK::load_modules() {
 }
 
 void BunnySDK::loop() {
-    // TODO: poll network, dispatch incoming messages to registry
+    ESP_LOGI(TAG, "Bunny is running. Waiting for commands from motor de procesos...");
+
+    // Keep app_main alive and provide a periodic heartbeat in the monitor.
+    while (true) {
+        ESP_LOGI(TAG, "Heartbeat: Bunny runtime active");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
 }
 
 SensorBuilder  BunnySDK::sensor (const char* name) { return SensorBuilder(name);  }
