@@ -7,6 +7,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
 - [GLOSARIO.md](GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [BUNNY_PROGRAMMING_PHILOSOPHY.md](BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
+- [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
 - [Ejemplos de Capacidades](#ejemplos-de-capacidades-ejemplo-módulos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Archivos Clave del SDK](#archivos-clave-del-sdk)
@@ -146,6 +147,7 @@ Para trabajar con Bunny, estos son los archivos más importantes:
 - [components/bunny/registry/registry.h](components/bunny/registry/registry.h) — Registro central y serialización JSON
 - [components/bunny/config/config.h](components/bunny/config/config.h) — Carga de configuración del dispositivo
 - [components/bunny/network/discovery.h](components/bunny/network/discovery.h) — Discovery UDP
+- [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — Visión general del flujo de red (WiFi + UDP + WebSocket)
 - [components/bunny/utils/json_builder.h](components/bunny/utils/json_builder.h) — Helper JSON sin dependencias
 
 ## Flujo de arranque esperado

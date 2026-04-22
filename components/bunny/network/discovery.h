@@ -27,6 +27,7 @@ extern "C" {
 void bunny_discovery_init(void);
 void bunny_discovery_start(void);
 void bunny_discovery_stop(void);
+uint32_t bunny_discovery_announce_count(void);
 
 #ifdef __cplusplus
 }

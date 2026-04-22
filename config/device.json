@@ -7,6 +7,15 @@
     "version": "0.1.0",
     "tags": []
   },
+  "network": {
+    "wifi": {
+      "ssid": "Totalplay-C9AF",
+      "password": "C9AFC9F6EUd5Ej2F",
+      "auth_type": "WPA",
+      "max_retries": 5,
+      "timeout_ms": 10000
+    }
+  },
   "discovery": {
     "enabled": true,
     "udp_port": 5555,

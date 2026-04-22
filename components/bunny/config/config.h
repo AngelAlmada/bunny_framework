@@ -28,11 +28,21 @@ typedef struct {
     const char *path;
 } bunny_webhook_config_t;
 
+/* Configuración WiFi */
+typedef struct {
+    const char *ssid;
+    const char *password;
+    const char *auth_type;
+    uint8_t max_retries;
+    uint32_t timeout_ms;
+} bunny_wifi_config_t;
+
 /* Configuración completa del dispositivo */
 typedef struct {
     bunny_device_info_t      device;
     bunny_discovery_config_t discovery;
     bunny_webhook_config_t   webhook;
+    bunny_wifi_config_t      wifi;
 } bunny_config_t;
 
 void bunny_config_load(void);
