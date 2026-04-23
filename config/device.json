@@ -9,8 +9,8 @@
   },
   "network": {
     "wifi": {
-      "ssid": "Totalplay-C9AF",
-      "password": "C9AFC9F6EUd5Ej2F",
+      "ssid": "angeltest123",
+      "password": "test1234",
       "auth_type": "WPA",
       "max_retries": 5,
       "timeout_ms": 10000

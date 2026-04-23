@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+import os
+import platform
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+def default_port() -> str:
+    env_port = os.getenv("BUNNY_PORT")
+    if env_port:
+        return env_port
+
+    system = platform.system().lower()
+    if system == "windows":
+        return "COM3"
+    if system == "darwin":
+        return "/dev/cu.usbserial"
+    return "/dev/ttyUSB0"
+
+
+def default_baud() -> str:
+    return os.getenv("BUNNY_BAUD", "115200")
+
+
+def usage() -> None:
+    print(
+        "Usage:\n"
+        "  bunny flash\n"
+        "  bunny flash clean\n\n"
+        "Environment overrides:\n"
+        "  BUNNY_PORT   Serial port (Linux default: /dev/ttyUSB0, "
+        "macOS: /dev/cu.usbserial, Windows: COM3)\n"
+        "  BUNNY_BAUD   Baud rate (default: 115200)\n\n"
+        "Examples:\n"
+        "  ./bunny flash\n"
+        "  ./bunny flash clean\n"
+        "  BUNNY_PORT=/dev/ttyUSB1 ./bunny flash\n"
+    )
+
+
+def find_idf_command() -> list[str] | None:
+    idf_in_path = shutil.which("idf.py")
+    if idf_in_path:
+        return [idf_in_path]
+
+    idf_python_env = os.getenv("IDF_PYTHON_ENV_PATH")
+    if idf_python_env:
+        py_bin = Path(idf_python_env) / ("Scripts/python.exe" if platform.system().lower() == "windows" else "bin/python")
+        if py_bin.exists():
+            idf_path = os.getenv("IDF_PATH")
+            if idf_path:
+                candidate = Path(idf_path) / "tools" / "idf.py"
+                if candidate.exists():
+                    return [str(py_bin), str(candidate)]
+
+    idf_path = os.getenv("IDF_PATH")
+    if idf_path:
+        candidate = Path(idf_path) / "tools" / "idf.py"
+        if candidate.exists():
+            return [sys.executable, str(candidate)]
+
+    home_candidate = Path.home() / "esp" / "esp-idf" / "tools" / "idf.py"
+    if home_candidate.exists():
+        return [sys.executable, str(home_candidate)]
+
+    return None
+
+
+def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
+    full = [*base_cmd, *extra_args]
+    print(f"[bunny] Running: {' '.join(full)}")
+    subprocess.run(full, check=True)
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if not args or args[0] in {"-h", "--help", "help"}:
+        usage()
+        return 0 if args else 1
+
+    if args[0] != "flash":
+        usage()
+        return 1
+
+    idf_cmd = find_idf_command()
+    if not idf_cmd:
+        print(
+            "Error: idf.py not found.\n"
+            "Install ESP-IDF and load its environment, or set IDF_PATH.\n"
+            "Linux/macOS: source <esp-idf>/export.sh\n"
+            "Windows: run ESP-IDF PowerShell/CMD environment",
+            file=sys.stderr,
+        )
+        return 1
+
+    port = default_port()
+    baud = default_baud()
+
+    try:
+        if len(args) == 1:
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
+            return 0
+
+        if len(args) == 2 and args[1] == "clean":
+            run_cmd(idf_cmd, ["fullclean"])
+            run_cmd(idf_cmd, ["reconfigure"])
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
+            return 0
+
+        usage()
+        return 1
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
