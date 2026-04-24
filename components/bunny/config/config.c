@@ -4,6 +4,26 @@
 
 static const char *TAG = "bunny_config";
 
+#ifndef BUNNY_DEVICE_ID
+#define BUNNY_DEVICE_ID "esp32-001"
+#endif
+
+#ifndef BUNNY_DEVICE_NAME
+#define BUNNY_DEVICE_NAME "Mi Dispositivo Bunny"
+#endif
+
+#ifndef BUNNY_DEVICE_DESCRIPTION
+#define BUNNY_DEVICE_DESCRIPTION "Dispositivo ESP32 gestionado por Bunny Framework"
+#endif
+
+#ifndef BUNNY_DEVICE_TYPE
+#define BUNNY_DEVICE_TYPE "esp32"
+#endif
+
+#ifndef BUNNY_DEVICE_VERSION
+#define BUNNY_DEVICE_VERSION "0.1.0"
+#endif
+
 #ifndef BUNNY_WIFI_SSID
 #define BUNNY_WIFI_SSID "TU_RED_WIFI"
 #endif
@@ -24,23 +44,43 @@ static const char *TAG = "bunny_config";
 #define BUNNY_WIFI_TIMEOUT_MS 10000
 #endif
 
+#ifndef BUNNY_DISCOVERY_ENABLED
+#define BUNNY_DISCOVERY_ENABLED true
+#endif
+
+#ifndef BUNNY_DISCOVERY_UDP_PORT
+#define BUNNY_DISCOVERY_UDP_PORT 5555
+#endif
+
+#ifndef BUNNY_DISCOVERY_BROADCAST_INTERVAL_MS
+#define BUNNY_DISCOVERY_BROADCAST_INTERVAL_MS 3000
+#endif
+
+#ifndef BUNNY_WEBHOOK_PORT
+#define BUNNY_WEBHOOK_PORT 8080
+#endif
+
+#ifndef BUNNY_WEBHOOK_PATH
+#define BUNNY_WEBHOOK_PATH "/bunny"
+#endif
+
 /* Valores por defecto — se sobreescribirán al parsear device.json */
 static bunny_config_t s_config = {
     .device = {
-        .id          = "esp32-001",
-        .name        = "Mi Dispositivo Bunny",
-        .description = "Dispositivo ESP32 gestionado por Bunny Framework",
-        .type        = "esp32",
-        .version     = "0.1.0",
+        .id          = BUNNY_DEVICE_ID,
+        .name        = BUNNY_DEVICE_NAME,
+        .description = BUNNY_DEVICE_DESCRIPTION,
+        .type        = BUNNY_DEVICE_TYPE,
+        .version     = BUNNY_DEVICE_VERSION,
     },
     .discovery = {
-        .enabled              = true,
-        .udp_port             = 5555,
-        .broadcast_interval_ms = 3000,
+        .enabled               = BUNNY_DISCOVERY_ENABLED,
+        .udp_port              = BUNNY_DISCOVERY_UDP_PORT,
+        .broadcast_interval_ms = BUNNY_DISCOVERY_BROADCAST_INTERVAL_MS,
     },
     .webhook = {
-        .port = 8080,
-        .path = "/bunny",
+        .port = BUNNY_WEBHOOK_PORT,
+        .path = BUNNY_WEBHOOK_PATH,
     },
     .wifi = {
         .ssid        = BUNNY_WIFI_SSID,
@@ -66,7 +106,11 @@ void bunny_config_load(void)
 {
     /* TODO: parsear config/device.json desde SPIFFS y rellenar s_config */
     /* Por ahora, usa los valores por defecto cargados en build-time desde config/device.json */
-    ESP_LOGI(TAG, "Config loaded (SSID=%s)", s_config.wifi.ssid);
+    ESP_LOGI(TAG,
+             "Config loaded (id=%s name=%s ssid=%s)",
+             s_config.device.id,
+             s_config.device.name,
+             s_config.wifi.ssid);
 }
 
 const bunny_config_t *bunny_config_get(void)

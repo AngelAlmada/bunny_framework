@@ -33,9 +33,14 @@ static esp_err_t ws_handler(httpd_req_t* req)
 
     esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
     if (ret != ESP_OK) {
+        s_ws_connected = false;
         ESP_LOGE(TAG, "WebSocket read length failed: %s", esp_err_to_name(ret));
         return ret;
     }
+
+    // Some clients/IDF flows may not hit the HTTP_GET branch for bookkeeping,
+    // but reaching a valid WS frame means the session is active.
+    s_ws_connected = true;
 
     if (ws_pkt.len > 0) {
         uint8_t* buf = (uint8_t*)malloc(ws_pkt.len + 1);
@@ -50,6 +55,7 @@ static esp_err_t ws_handler(httpd_req_t* req)
             buf[ws_pkt.len] = '\0';
             ESP_LOGI(TAG, "WebSocket message received: %s", (char*)buf);
         } else {
+            s_ws_connected = false;
             ESP_LOGE(TAG, "WebSocket read failed: %s", esp_err_to_name(ret));
         }
 

@@ -7,13 +7,20 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
 - [INCLUDES_GUIDE.md](INCLUDES_GUIDE.md) — **Qué incluir en cada archivo y por qué** (bunny_sdk.h vs bunny.h, árbol de includes, tabla de referencia rápida)
 - [PROCESS_ENGINE_CONNECTION_GUIDE.md](PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
+- [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
 - [GLOSARIO.md](GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [BUNNY_PROGRAMMING_PHILOSOPHY.md](BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
 - [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
+- [Documentación de tesis](#documentación-de-tesis)
 - [Ejemplos de Capacidades](#ejemplos-de-capacidades-ejemplo-módulos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Archivos Clave del SDK](#archivos-clave-del-sdk)
 - [Configuración del Dispositivo](#configuración-del-dispositivo)
+
+## Documentación de tesis
+
+- [DOCUMENTACION_TESIS_PRINCIPAL.md](DOCUMENTACION_TESIS_PRINCIPAL.md) — Versión condensada para el cuerpo principal de tesis (arquitectura, flujo y evidencia de implementación)
+- [DOCUMENTACION_TESIS_ANEXOS.md](DOCUMENTACION_TESIS_ANEXOS.md) — Versión extendida para anexos (detalles técnicos, decisiones y fragmentos adicionales de código)
 
 ## Objetivo
 

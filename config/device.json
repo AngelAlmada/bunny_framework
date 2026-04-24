@@ -1,7 +1,7 @@
 {
   "device": {
     "id": "esp32-001",
-    "name": "Mi Dispositivo Bunny",
+    "name": "Si estas viendo esto, ya lograste conectar todo. HOLA MUNDO en Esp32",
     "description": "Dispositivo ESP32 gestionado por Bunny Framework",
     "type": "esp32",
     "version": "0.1.0",

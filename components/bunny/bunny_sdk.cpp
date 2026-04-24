@@ -88,6 +88,7 @@ void BunnySDK::loop() {
     bool stage2_logged = false;
     bool stage3_logged = false;
     bool stage4_logged = false;
+    bool discovery_active = true;
 
     ESP_LOGI(TAG, "Bunny runtime started");
     ESP_LOGI(TAG, "FLOW[0/4] Waiting WiFi/LAN + motor de procesos");
@@ -131,6 +132,12 @@ void BunnySDK::loop() {
             ESP_LOGI(TAG, "FLOW[4/4] WebSocket connection established (real)");
             ESP_LOGI(TAG, "Bunny ready to receive commands and publish events");
             stage4_logged = true;
+        }
+
+        if (ws_connected && discovery_active) {
+            bunny_discovery_stop();
+            ESP_LOGI(TAG, "FLOW[4/4] UDP discovery stopped after WebSocket connection");
+            discovery_active = false;
         }
 
         ESP_LOGI(TAG,
