@@ -8,6 +8,22 @@ Fecha: 28 de abril de 2026
 
 Alcance de implementacion auditado contra codigo fuente en `components/bunny` y `main`.
 
+## Indice de navegacion
+
+- [Convenciones normativas](#convenciones-normativas)
+- [1. Introduccion](#1-introduccion)
+- [2. Arquitectura General](#2-arquitectura-general)
+- [3. Protocolo de Descubrimiento por UDP Broadcast](#3-protocolo-de-descubrimiento-por-udp-broadcast)
+- [4. Handshake de Conexion WebSocket](#4-handshake-de-conexion-websocket)
+- [5. Protocolo de Persistencia (Heartbeat)](#5-protocolo-de-persistencia-heartbeat)
+- [6. Protocolo de Ejecucion de Capacidades](#6-protocolo-de-ejecucion-de-capacidades)
+- [7. Protocolo de Reporte de Eventos](#7-protocolo-de-reporte-de-eventos)
+- [8. Reglas de Validacion JSON](#8-reglas-de-validacion-json)
+- [9. Maquina de Estados de BCP](#9-maquina-de-estados-de-bcp)
+- [10. Versionado del Protocolo](#10-versionado-del-protocolo)
+- [11. Cobertura e Implementaciones Faltantes](#11-cobertura-e-implementaciones-faltantes)
+- [12. Apendices](#12-apendices)
+
 ## Convenciones normativas
 
 Las palabras clave MUST, SHOULD y MAY se interpretan como requisitos normativos:
@@ -36,17 +52,22 @@ BCP define contrato de interoperabilidad, no logica de negocio.
 
 BCP cubre cinco capas:
 
-- Discovery Layer.
-- Connection Layer.
-- Persistence Layer.
-- Capability Execution Layer.
-- Event Transport Layer.
+- Discovery Layer: define como el ESP32 anuncia su presencia en red local, que campos MUST incluir el anuncio y como el motor interpreta esos anuncios para construir un endpoint de sesion.
+- Connection Layer: define el establecimiento de sesion WebSocket, la condicion minima para considerar la sesion activa y la separacion entre handshake de transporte y handshake de aplicacion.
+- Persistence Layer: define liveness de sesion (heartbeat/health-check), tiempos esperados, condicion de timeout y transicion obligatoria a reconexion cuando la sesion deja de ser confiable.
+- Capability Execution Layer: define el contrato request/response para ejecutar capacidades, incluyendo correlacion de mensajes, validacion de payload y reglas de error deterministas.
+- Event Transport Layer: define la publicacion de eventos desde el dispositivo hacia el motor, confirmaciones de entrega, orden esperado y manejo de duplicados o desfases.
 
 BCP no cubre:
 
 - Reglas de negocio del motor.
 - Modelo interno de procesos del motor.
 - Politicas de autenticacion/autorizacion externas al canal (salvo marcarlas como pendientes en esta version).
+
+Interpretacion obligatoria del alcance:
+
+- Si un comportamiento pertenece al dominio de negocio (por ejemplo, "cuando encender ventilador"), ese comportamiento queda fuera de BCP.
+- Si un comportamiento define interoperabilidad wire (por ejemplo, "que campos debe traer el mensaje"), ese comportamiento cae dentro de BCP y MUST documentarse explicitamente.
 
 ### 1.3 Objetivos
 
@@ -55,6 +76,19 @@ BCP no cubre:
 - Tolerancia a fallos: detectar perdida de sesion y reconectar.
 - Compatibilidad entre motores: mantener contrato comun con versionado explicito.
 
+Desambiguacion de objetivos para implementacion:
+
+- Interoperabilidad significa que dos implementaciones independientes (un ESP32 con Bunny y un motor desarrollado por tercero) pueden completar el flujo `discovery -> websocket -> intercambio de mensajes` sin conocer detalles internos entre si. En terminos de conformidad, un motor es interoperable si interpreta correctamente `udp_discovery_announce`, construye una URL valida y completa handshake de sesion.
+- Extensibilidad significa que los mensajes nuevos deben agregarse como nuevos `type` o como campos opcionales compatibles, evitando romper parseo de versiones previas. Una extension no es valida si obliga a reescribir clientes existentes para operaciones ya soportadas.
+- Tolerancia a fallos significa que la sesion no se considera binaria (viva/muerta) sin transicion controlada: debe existir deteccion de degradacion, timeout y politica de reconexion. El objetivo no es "evitar fallas", sino garantizar recuperacion determinista despues de fallar.
+- Compatibilidad entre motores significa que el contrato BCP debe ser suficiente para que distintos motores (no solo uno) puedan operar con el mismo firmware. Esto exige versionado de protocolo, semantica estable por mensaje y reglas de error consistentes.
+
+Criterios de exito de alto nivel:
+
+- Un integrador externo SHOULD poder implementar un cliente BCP sin inspeccionar el codigo fuente del firmware.
+- Una auditoria tecnica SHOULD poder mapear cada mensaje documentado a evidencia de implementacion o a estado `[NO IMPLEMENTADO]`.
+- Toda diferencia entre contrato deseado y estado actual MUST quedar explicitamente marcada en este documento.
+
 ### 1.4 Invariantes globales BCP
 
 - Un motor MUST completar handshake de conexion antes de enviar mensajes de ejecucion de capacidades.
@@ -62,6 +96,19 @@ BCP no cubre:
 - Si el heartbeat vence, el estado de sesion MUST transicionar a `Reconnecting`. [NO IMPLEMENTADO EN MAQUINA DE ESTADOS DE CODIGO]
 - El anuncio UDP MUST incluir endpoint WebSocket (`ip`, `webhook_port`, `webhook_path`) para habilitar conexion.
 - El ESP32 MUST aceptar frames WebSocket de texto en el path configurado.
+
+### 1.5 Como leer esta especificacion
+
+Este documento se usa en tres modos distintos y cada modo requiere una lectura diferente:
+
+- Implementacion de motor: priorizar secciones 3, 4, 5, 6 y 7 para construir parser, state machine y politicas de reconexion.
+- Auditoria de conformidad: priorizar secciones 8, 9, 10 y 11 para identificar brechas entre contrato y codigo actual.
+- Diseno evolutivo de protocolo: priorizar secciones 1, 10 y 12 para extender BCP sin romper compatibilidad.
+
+Regla de interpretacion para lectores:
+
+- Si una regla esta marcada con MUST y no tiene etiqueta `[NO IMPLEMENTADO]`, se considera requisito operativo actual.
+- Si una regla esta marcada como `[NO IMPLEMENTADO]`, se considera contrato objetivo, no comportamiento disponible en runtime.
 
 ## 2. Arquitectura General
 
@@ -333,6 +380,24 @@ sequenceDiagram
   M->>M: construye ws://ip:webhook_port/webhook_path
 ```
 
+### 3.17 Guia de interpretacion detallada por punto
+
+- 3.1 Proposito: el emisor del mensaje es el ESP32 y el receptor inicial es cualquier host de la subred. El objetivo operativo no es "conectar" sino "publicar suficiente informacion para que el motor pueda decidir conectarse".
+- 3.2 Precondiciones: si `discovery.enabled=false`, el ESP32 no enviara anuncios y el motor no podra descubrir por broadcast; en ese escenario, el motor solo podria conectar por configuracion estatica externa a BCP.
+- 3.3 Flujo: cada iteracion produce un snapshot de disponibilidad de endpoint. No existe sesion ni historial en UDP; cada anuncio debe ser auto-contenido.
+- 3.4 Formato: el payload define identidad (`id`, `name`, `version`) y conectividad (`ip`, `webhook_port`, `webhook_path`) en un mismo mensaje para evitar consultas adicionales.
+- 3.5 Campos: todos los campos listados son obligatorios porque el motor necesita resolver tanto "quien es" como "donde conectar" en una sola recepcion.
+- 3.6 Restricciones: las restricciones minimas evitan ambiguedad de parseo; por ejemplo, `webhook_port` como string puede romper motores que esperan entero y MUST tratarse como invalido.
+- 3.7 Validaciones: el ESP32 hoy no endurece el contenido porque usa configuracion local; por eso, la carga de robustez recae en el motor, que MUST validar antes de usar el endpoint.
+- 3.8 Exito: en discovery no hay ACK wire, por lo que "exito" significa "motor pudo interpretar anuncio y pasar a estado discovered".
+- 3.9 Error: los errores actuales son locales al emisor (log del dispositivo). No existe respuesta hacia motor indicando que un anuncio fallo.
+- 3.10 Edge cases: `0.0.0.0` significa anuncio semantico valido pero endpoint no utilizable; el motor SHOULD conservar el dispositivo pero posponer intento de sesion.
+- 3.11 Timeouts: el timeout de stale no esta en firmware, por lo que cada motor debe fijar explicitamente cuando un dispositivo deja de considerarse disponible.
+- 3.12 Reintentos: el reintento de emision es implicito por periodicidad; no hay "retry inmediato" por paquete fallido, solo siguiente ciclo.
+- 3.13 Reconexion: si cambia IP para mismo `id`, el motor debe priorizar el endpoint mas reciente para evitar reconectar a direccion obsoleta.
+- 3.14 Seguridad: la ausencia de firma implica que un tercero en LAN podria inyectar anuncios; por ello este discovery MUST asumirse no autenticado en esta version.
+- 3.15 Estado: implementado significa "emision real en firmware"; no implica que exista una referencia de motor incluida en este repositorio.
+
 ## 4. Handshake de Conexion WebSocket
 
 Estado de implementacion: Parcial.
@@ -546,6 +611,25 @@ stateDiagram-v2
   Connected --> Closed: socket close/error
 ```
 
+### 4.17 Guia de interpretacion detallada por punto
+
+- 4.1 Proposito: el motor inicia y el ESP32 responde; la meta es pasar de descubrimiento sin estado a sesion bidireccional estable.
+- 4.2 Precondiciones: sin endpoint valido y cliente RFC6455 correcto, el handshake puede fallar aunque la red IP funcione.
+- 4.3 Flujo: el paso 2 (upgrade exitoso) habilita transporte, pero no valida semantica BCP de aplicacion; por eso se separan dos fases.
+- 4.4 Formato: actualmente solo existe handshake de transporte; el handshake JSON `handshake_init` es contrato objetivo documentado para evitar divergencia futura.
+- 4.5 Campos: `engine_id`, `protocol_version` y `capabilities` identifican al motor, su dialecto de protocolo y funciones opcionales.
+- 4.6 Restricciones: si `protocol_version` no cumple formato acordado, el receptor debe rechazar negociacion para evitar comportamientos no deterministas.
+- 4.7 Validaciones: en estado actual el ESP32 valida framing pero no payload semantico; por eso un motor compatible debe auto-validar su propio mensaje antes de enviar.
+- 4.8 Exito: el `handshake_ack` define explicitamente aceptacion de sesion a nivel BCP; hoy ese ACK no existe, por lo que la aceptacion se infiere por socket abierto.
+- 4.9 Error: los errores listados permiten rechazo explicito y auditable; sin ellos, el motor solo observa cierres/errores de transporte sin causa semantica.
+- 4.10 Edge cases: abrir TCP no equivale a sesion BCP; la sesion solo existe tras upgrade valido y posterior intercambio de protocolo cuando se implemente.
+- 4.11 Timeouts: deben parametrizarse para distinguir "red lenta" de "peer no compatible"; esa diferencia evita reconexiones agresivas innecesarias.
+- 4.12 Reintentos: el backoff evita tormentas de reconexion cuando hay caida de red o reinicio del dispositivo.
+- 4.13 Reconexion: un unico socket por `device.id` evita doble despacho de mensajes y estados inconsistentes en el motor.
+- 4.14 Seguridad: sin autenticacion y sin TLS, la sesion actual protege transporte minimo pero no identidad criptografica.
+- 4.15 Estado: "Parcial" significa que la capa de transporte funciona y la capa semantica de handshake sigue planificada.
+- 4.16 State machine: representa comportamiento objetivo de handshake completo; hoy el runtime implementa solo una parte de esa maquina.
+
 ## 5. Protocolo de Persistencia (Heartbeat)
 
 Estado de implementacion: Parcial.
@@ -692,6 +776,24 @@ Ejemplo invalido:
 Explicacion semantica:
 
 - Sirve para comprobar liveness de sesion y latencia operativa.
+
+### 5.16 Guia de interpretacion detallada por punto
+
+- 5.1 Proposito: heartbeat no ejecuta negocio; solo confirma que ambas puntas pueden intercambiar mensajes dentro de una ventana temporal aceptable.
+- 5.2 Precondiciones: sin socket abierto no existe heartbeat de sesion, solo reintentos de conexion.
+- 5.3 Flujo: el motor envia y el ESP32 responde; el motor decide salud por tiempo de respuesta, no solo por existencia de socket.
+- 5.4 Formato: `correlation_id` permite distinguir respuestas de pings concurrentes y evitar confundir un pong atrasado con uno vigente.
+- 5.5 Campos: `type` identifica semantica del frame y `correlation_id` establece trazabilidad; `ts` mejora diagnostico pero no es estrictamente necesario.
+- 5.6 Restricciones: la unicidad temporal de `correlation_id` evita colision de mediciones y falsos positivos de salud.
+- 5.7 Validaciones: al no validar schema en firmware, un motor debe tratar heartbeat JSON como contrato futuro y usar ping/pong de libreria en presente.
+- 5.8 Exito: un pong correlacionado y dentro de timeout confirma liveness aplicativa; socket abierto sin respuesta no implica salud.
+- 5.9 Error: actualmente el error es implicito (timeout/cierre). El objetivo BCP es hacerlo explicito con `heartbeat_error` para observabilidad.
+- 5.10 Edge cases: un pong atrasado despues de timeout debe descartarse para no reanimar una sesion ya dada por muerta.
+- 5.11 Timeouts: definir intervalo y timeout separados evita tanto falso timeout (muy corto) como deteccion tardia de caidas (muy largo).
+- 5.12 Reintentos: la politica debe limitar numero de intentos antes de declarar degradacion y mover estado a reconexion.
+- 5.13 Reconexion: al vencer heartbeat, la transicion a `Reconnecting` MUST ser inmediata para acotar tiempo de indisponibilidad.
+- 5.14 Seguridad: sin firma/token, heartbeat prueba liveness de canal, no autenticidad del originador.
+- 5.15 Estado: actualmente existe solo heartbeat de monitor local (log), no heartbeat JSON interoperable entre implementaciones.
 
 ## 6. Protocolo de Ejecucion de Capacidades
 
@@ -1021,6 +1123,27 @@ sequenceDiagram
   end
 ```
 
+### 6.19 Guia de interpretacion detallada por punto
+
+- 6.1 Proposito: define como el motor solicita una accion o lectura y como el dispositivo devuelve resultado trazable.
+- 6.2 Precondiciones: si la capacidad no esta en `Registry`, la solicitud debe fallar de forma determinista y no silenciosa.
+- 6.3 Flujo: valida -> ejecuta -> responde; este orden MUST mantenerse para evitar ejecucion de payload invalido.
+- 6.4 Formato: el request separa identidad de capacidad (`capability_kind`, `capability_name`) de argumentos (`params`) para permitir validaciones previas a ejecucion.
+- 6.5 Campos: `correlation_id` es obligatorio porque varias solicitudes pueden coexistir y el motor necesita asociar cada respuesta a su request.
+- 6.6 Restricciones: `capability_name` es case-sensitive por contrato de registro; discrepancias de mayusculas deben tratarse como no encontrado.
+- 6.7 Validaciones: tipos y campos requeridos deben validarse antes de invocar hooks de hardware para prevenir acciones fuera de contrato.
+- 6.8 Exito: la respuesta exitosa MUST repetir `correlation_id`; sin esa repeticion, el motor no puede cerrar correctamente la transaccion.
+- 6.9 Error: los codigos de error deben ser estables entre versiones para que el motor pueda automatizar compensaciones.
+- 6.10 Edge cases: requests duplicados con mismo `correlation_id` deben ser deduplicados o rechazados explicitamente para preservar idempotencia.
+- 6.11 Timeouts: el timeout depende de la capacidad; sensores simples pueden tener timeout corto y comandos fisicos timeout mayor.
+- 6.12 Reintentos: reintentar un comando no idempotente puede duplicar efectos fisicos; por eso el motor SHOULD clasificar capacidades por seguridad de retry.
+- 6.13 Reconexion: toda solicitud en vuelo al perder sesion debe cerrarse como error terminal o reencolarse con regla explicita.
+- 6.14 Seguridad: sin autorizacion por capacidad, cualquier cliente conectado podria intentar invocar cualquier capacidad.
+- 6.15 Estado: el framework ya modela capacidades y metadata, pero falta el puente de red que ejecute ese contrato wire.
+- 6.16 Catalogo: los ejemplos muestran semantica esperada de tres tipos (`command`, `sensor`, `state`) y ayudan a validar parser de terceros.
+- 6.17 Schema: define minima estructura universal del request; los constraints por capacidad viven en metadata y validacion de negocio.
+- 6.18 Sequence: representa intercambio canonical request/response con rama de error obligatoria.
+
 ## 7. Protocolo de Reporte de Eventos
 
 Estado de implementacion: [NO IMPLEMENTADO] para envio wire hacia motor.
@@ -1176,6 +1299,24 @@ Explicacion semantica:
 - `event_report` notifica un hecho ocurrido en el dispositivo.
 - El motor usa `correlation_id` para trazabilidad y deduplicacion.
 
+### 7.16 Guia de interpretacion detallada por punto
+
+- 7.1 Proposito: eventos empujan hechos desde el dispositivo al motor para evitar polling intensivo y reducir latencia de reaccion.
+- 7.2 Precondiciones: el evento debe existir en `Registry`; eventos no declarados no deben enviarse como texto libre.
+- 7.3 Flujo: `emit` local -> serializacion wire -> envio -> ACK opcional; la separacion evita mezclar hook local con entrega de red.
+- 7.4 Formato: `event_name` identifica el tipo de hecho y `payload` aporta contexto puntual del hecho ocurrido.
+- 7.5 Campos: `correlation_id` permite rastrear, deduplicar y auditar entrega aunque el flujo sea asimetrico.
+- 7.6 Restricciones: el `payload` SHOULD respetar metadata del evento para que el motor no reciba estructuras inesperadas.
+- 7.7 Validaciones: hoy se valida solo existencia local del evento; falta validacion de schema y envio estandar.
+- 7.8 Exito: si se adopta ACK, el exito debe definirse como recepcion confirmada, no solo envio intentado.
+- 7.9 Error: sin `event_error` wire, los fallos quedan opacos; una version futura debe exponer causa de rechazo.
+- 7.10 Edge cases: fuera de secuencia y duplicados son esperables en reconexiones; el motor debe usar `correlation_id` y `ts` para ordenar.
+- 7.11 Timeouts: timeout de ACK delimita cuanto esperar antes de reintentar o marcar evento no confirmado.
+- 7.12 Reintentos: la estrategia de retry debe balancear confiabilidad y riesgo de duplicacion de efectos en motor.
+- 7.13 Reconexion: eventos pendientes al caer sesion requieren politica explicita (descartar, reenviar o persistir).
+- 7.14 Seguridad: sin controles de integridad, un evento no autenticado no puede probar origen criptografico.
+- 7.15 Estado: declaracion y hook existen en firmware; falta el transporte formal hacia motor.
+
 ## 8. Reglas de Validacion JSON
 
 ### 8.1 Que valida Bunny hoy
@@ -1235,6 +1376,14 @@ Malformed 3:
 
 Problema: `payload` deberia ser objeto JSON.
 
+### 8.6 Guia de interpretacion detallada por punto
+
+- 8.1 Validacion actual significa robustez de framing, no robustez de contrato de mensajes.
+- 8.2 Lo no validado hoy implica que un payload semantico incorrecto puede pasar hasta capas superiores sin rechazo estructurado.
+- 8.3 Los errores actuales son de IO/protocolo WebSocket, no de dominio BCP.
+- 8.4 Las brechas listadas deben tratarse como deuda de interoperabilidad prioritaria porque impactan compatibilidad entre motores.
+- 8.5 Los malformed examples son casos de prueba minimos que todo parser BCP SHOULD incluir en su suite.
+
 ## 9. Maquina de Estados de BCP
 
 ```mermaid
@@ -1265,6 +1414,12 @@ Invariantes:
 - `HeartbeatActive` MUST requerir socket abierto.
 - `Reconnecting` MUST cancelar solicitudes en vuelo o marcarlas expiradas.
 
+Interpretacion operativa:
+
+- La maquina separa disponibilidad de red (`Discovered`) de disponibilidad de sesion (`Connected`) para evitar falsos positivos operativos.
+- `HeartbeatActive` representa salud continua, no solo conexion inicial.
+- `Error` y `Reconnecting` son estados funcionales, no solo etiquetas de log; deben disparar politicas concretas.
+
 ## 10. Versionado del Protocolo
 
 ### 10.1 Regla de versionado
@@ -1286,6 +1441,11 @@ Estado actual en codigo:
 
 - Negociacion de version en runtime: [NO IMPLEMENTADO].
 
+Interpretacion operativa:
+
+- Versionar no es solo etiquetar mensajes; es definir reglas de aceptacion y rechazo entre peers con versiones distintas.
+- La compatibilidad backward debe evaluarse por comportamiento observable en wire, no por similitud de implementacion interna.
+
 ## 11. Cobertura e Implementaciones Faltantes
 
 | Protocolo | Estado | Codigo fuente relacionado | Notas |
@@ -1297,6 +1457,11 @@ Estado actual en codigo:
 | Ejecucion de capacidades por mensajes | Planeado | `components/bunny/protocol/protocol.c`, `components/bunny/runtime/runtime.c`, `components/bunny/registry/registry.cpp` | Registry y hooks listos; falta dispatcher wire |
 | Reporte de eventos al motor | Planeado | `components/bunny/bunny_sdk.cpp` | `BunnySDK::emit` tiene TODO de envio en red |
 | Validacion JSON por schema | Planeado | `components/bunny/protocol/protocol.c` | No hay parser/validator activo |
+
+Interpretacion operativa:
+
+- Esta tabla es una matriz de trazabilidad: cada fila vincula contrato funcional con evidencia de codigo.
+- "Implementado" implica evidencia ejecutable en repositorio; "Planeado" implica especificacion existente sin comportamiento operativo completo.
 
 ## 12. Apendices
 
@@ -1394,6 +1559,11 @@ Estado: [PENDIENTE DE DEFINIR EN IMPLEMENTACION].
   "payload": {"zone": "living_room"}
 }
 ```
+
+Interpretacion operativa:
+
+- Los apendices funcionan como referencia rapida de implementacion y pruebas de conformidad.
+- Los catalogos de errores y tipos deben mantenerse sincronizados con cambios de version del protocolo para evitar ambiguedad en integraciones.
 
 ---
 
