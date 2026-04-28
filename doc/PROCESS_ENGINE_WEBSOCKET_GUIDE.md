@@ -35,7 +35,7 @@ El motor de procesos actúa como:
 - emisor de frames JSON,
 - responsable de reconexión, health-check y manejo de sesión.
 
-Referencia de implementación del servidor: [components/bunny/network/network.c](components/bunny/network/network.c)
+Referencia de implementación del servidor: [components/bunny/network/network.c](../components/bunny/network/network.c)
 
 ---
 
@@ -337,4 +337,4 @@ Referencias útiles:
 - [PROCESS_ENGINE_CONNECTION_GUIDE.md](PROCESS_ENGINE_CONNECTION_GUIDE.md)
 - [MOTOR_INTEGRATION.md](MOTOR_INTEGRATION.md)
 - [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md)
-- [components/bunny/network/network.c](components/bunny/network/network.c)
+- [components/bunny/network/network.c](../components/bunny/network/network.c)

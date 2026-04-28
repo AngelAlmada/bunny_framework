@@ -26,7 +26,7 @@ Bunny publica anuncios UDP periódicos en broadcast usando:
 - puerto: `discovery.udp_port` (por defecto `5555`)
 - intervalo: `discovery.broadcast_interval_ms` (por defecto `3000`)
 
-Referencia de implementación: [components/bunny/network/discovery.c](components/bunny/network/discovery.c)
+Referencia de implementación: [components/bunny/network/discovery.c](../components/bunny/network/discovery.c)
 
 ### Payload esperado
 
@@ -67,7 +67,7 @@ Ejemplo:
 
 `ws://192.168.100.176:8080/bunny`
 
-Referencia de implementación del servidor: [components/bunny/network/network.c](components/bunny/network/network.c)
+Referencia de implementación del servidor: [components/bunny/network/network.c](../components/bunny/network/network.c)
 
 ### Reglas recomendadas de conexión en el motor
 
@@ -105,7 +105,7 @@ En monitor ESP32, Bunny imprime:
 
 Esto confirma que el dispositivo también ve la sesión activa.
 
-Referencia: [components/bunny/network/network.c](components/bunny/network/network.c), [components/bunny/bunny_sdk.cpp](components/bunny/bunny_sdk.cpp)
+Referencia: [components/bunny/network/network.c](../components/bunny/network/network.c), [components/bunny/bunny_sdk.cpp](../components/bunny/bunny_sdk.cpp)
 
 ---
 
@@ -153,5 +153,5 @@ Por eso, la validación de conexión debe enfocarse hoy en handshake + estabilid
 
 Referencias:
 
-- [components/bunny/network/network.c](components/bunny/network/network.c)
-- [components/bunny/protocol/protocol.c](components/bunny/protocol/protocol.c)
+- [components/bunny/network/network.c](../components/bunny/network/network.c)
+- [components/bunny/protocol/protocol.c](../components/bunny/protocol/protocol.c)

@@ -26,7 +26,7 @@ Términos clave: [GLOSARIO.md](GLOSARIO.md)
 
 ## Sistema de Tipos ([Type system](GLOSARIO.md#term-type-system))
 
-**Archivo**: [`components/bunny/types/bunny_types.h`](components/bunny/types/bunny_types.h)
+**Archivo**: [`components/bunny/types/bunny_types.h`](../components/bunny/types/bunny_types.h)
 
 ### ¿Por qué un sistema de tipos?
 
@@ -124,7 +124,7 @@ Bunny.command("reset")
 
 ## [Metadata Semántica](GLOSARIO.md#term-metadata-semantica)
 
-**Archivo**: [`components/bunny/metadata/metadata.h`](components/bunny/metadata/metadata.h)
+**Archivo**: [`components/bunny/metadata/metadata.h`](../components/bunny/metadata/metadata.h)
 
 ### ¿Qué es la metadata y por qué es crítica?
 
@@ -242,7 +242,7 @@ Registry::instance().register_capability(&sensor);
 
 ## Contratos Base de [Capacidades](GLOSARIO.md#term-capability)
 
-**Archivo**: [`components/bunny/core/capability.h`](components/bunny/core/capability.h)
+**Archivo**: [`components/bunny/core/capability.h`](../components/bunny/core/capability.h)
 
 ### ¿Qué es un contrato base?
 
@@ -292,7 +292,7 @@ enum class CapabilityKind : uint8_t {
 
 ## [Fluent API](GLOSARIO.md#term-fluent-api) y [Builder](GLOSARIO.md#term-builder)
 
-**Archivos**: [`components/bunny/builder/`](components/bunny/builder/)
+**Archivos**: [`components/bunny/builder/`](../components/bunny/builder/)
 
 ### ¿Qué es una Fluent API?
 
@@ -377,7 +377,7 @@ Bunny.state("fanState", STRING)
 
 ## Registro Central ([Registry](GLOSARIO.md#term-registry))
 
-**Archivo**: [`components/bunny/registry/registry.h`](components/bunny/registry/registry.h)
+**Archivo**: [`components/bunny/registry/registry.h`](../components/bunny/registry/registry.h)
 
 ### ¿Por qué un Registry?
 
@@ -478,7 +478,7 @@ void app_main(void) {
 
 ## [Serialización](GLOSARIO.md#term-serializacion) [JSON](GLOSARIO.md#term-json)
 
-Bunny **no usa bibliotecas externas** para [JSON](GLOSARIO.md#term-json). Helper simple en [`components/bunny/utils/json_builder.h`](components/bunny/utils/json_builder.h).
+Bunny **no usa bibliotecas externas** para [JSON](GLOSARIO.md#term-json). Helper simple en [`components/bunny/utils/json_builder.h`](../components/bunny/utils/json_builder.h).
 
 Cada capacidad implementa `serialize()` que genera su JSON:
 
@@ -545,11 +545,11 @@ Mensajes JSON esperados entre [motor de procesos](GLOSARIO.md#term-motor-proceso
 
 ## Ejemplos Completos
 
-Ver archivos de ejemplo en [`main/`](main/):
-- [Sensor](main/sensors/temperature_sensor.cpp)
-- [Comando](main/commands/fan_command.cpp)
-- [Evento](main/events/motion_event.cpp)
-- [Estado](main/states/fan_state.cpp)
+Ver archivos de ejemplo en [`main/`](../main/):
+- [Sensor](../main/sensors/temperature_sensor.cpp)
+- [Comando](../main/commands/fan_command.cpp)
+- [Evento](../main/events/motion_event.cpp)
+- [Estado](../main/states/fan_state.cpp)
 
 ---
 

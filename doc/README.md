@@ -58,10 +58,10 @@ El proyecto incluye 4 módulos de ejemplo que muestran cómo declarar cada tipo 
 
 | Tipo | Archivo | Código |
 |------|---------|--------|
-| **Sensor** | [main/sensors/temperature_sensor.cpp](main/sensors/temperature_sensor.cpp) | Lee temperatura (hardware mock) |
-| **Command** | [main/commands/fan_command.cpp](main/commands/fan_command.cpp) | Enciende/apaga ventilador |
-| **Event** | [main/events/motion_event.cpp](main/events/motion_event.cpp) | Notifica movimiento detectado |
-| **State** | [main/states/fan_state.cpp](main/states/fan_state.cpp) | Mantiene estado del ventilador |
+| **Sensor** | [main/sensors/temperature_sensor.cpp](../main/sensors/temperature_sensor.cpp) | Lee temperatura (hardware mock) |
+| **Command** | [main/commands/fan_command.cpp](../main/commands/fan_command.cpp) | Enciende/apaga ventilador |
+| **Event** | [main/events/motion_event.cpp](../main/events/motion_event.cpp) | Notifica movimiento detectado |
+| **State** | [main/states/fan_state.cpp](../main/states/fan_state.cpp) | Mantiene estado del ventilador |
 
 Para crear tus propios módulos, <u>sigue los patrones de estos ejemplos</u> y consulta [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
 
@@ -133,36 +133,36 @@ Para trabajar con Bunny, estos son los archivos más importantes:
 
 ### API Pública (incluir en tus módulos)
 
-- [components/bunny/bunny_sdk.h](components/bunny/bunny_sdk.h) — **Interfaz principal del SDK** (`Bunny` global, builders, lifecycle)
-- [components/bunny/include/bunny.h](components/bunny/include/bunny.h) — **Interfaz C compatible** (app_main)
+- [components/bunny/bunny_sdk.h](../components/bunny/bunny_sdk.h) — **Interfaz principal del SDK** (`Bunny` global, builders, lifecycle)
+- [components/bunny/include/bunny.h](../components/bunny/include/bunny.h) — **Interfaz C compatible** (app_main)
 
 ### Core
 
-- [components/bunny/types/bunny_types.h](components/bunny/types/bunny_types.h) — Sistema de tipos (NUMBER, STRING, BOOLEAN, OBJECT, ARRAY)
-- [components/bunny/metadata/metadata.h](components/bunny/metadata/metadata.h) — Estructura de metadata semántica
-- [components/bunny/core/capability.h](components/bunny/core/capability.h) — Interfaz base ICapability
+- [components/bunny/types/bunny_types.h](../components/bunny/types/bunny_types.h) — Sistema de tipos (NUMBER, STRING, BOOLEAN, OBJECT, ARRAY)
+- [components/bunny/metadata/metadata.h](../components/bunny/metadata/metadata.h) — Estructura de metadata semántica
+- [components/bunny/core/capability.h](../components/bunny/core/capability.h) — Interfaz base ICapability
 
 ### Builders (Fluent API)
 
-- [components/bunny/builder/sensor_builder.h](components/bunny/builder/sensor_builder.h)
-- [components/bunny/builder/command_builder.h](components/bunny/builder/command_builder.h)
-- [components/bunny/builder/event_builder.h](components/bunny/builder/event_builder.h)
-- [components/bunny/builder/state_builder.h](components/bunny/builder/state_builder.h)
+- [components/bunny/builder/sensor_builder.h](../components/bunny/builder/sensor_builder.h)
+- [components/bunny/builder/command_builder.h](../components/bunny/builder/command_builder.h)
+- [components/bunny/builder/event_builder.h](../components/bunny/builder/event_builder.h)
+- [components/bunny/builder/state_builder.h](../components/bunny/builder/state_builder.h)
 
 ### Capacidades
 
-- [components/bunny/capabilities/sensor_capability.h](components/bunny/capabilities/sensor_capability.h)
-- [components/bunny/capabilities/command_capability.h](components/bunny/capabilities/command_capability.h) — Incluye `Params` container
-- [components/bunny/capabilities/event_capability.h](components/bunny/capabilities/event_capability.h)
-- [components/bunny/capabilities/state_capability.h](components/bunny/capabilities/state_capability.h)
+- [components/bunny/capabilities/sensor_capability.h](../components/bunny/capabilities/sensor_capability.h)
+- [components/bunny/capabilities/command_capability.h](../components/bunny/capabilities/command_capability.h) — Incluye `Params` container
+- [components/bunny/capabilities/event_capability.h](../components/bunny/capabilities/event_capability.h)
+- [components/bunny/capabilities/state_capability.h](../components/bunny/capabilities/state_capability.h)
 
 ### Infraestructura
 
-- [components/bunny/registry/registry.h](components/bunny/registry/registry.h) — Registro central y serialización JSON
-- [components/bunny/config/config.h](components/bunny/config/config.h) — Carga de configuración del dispositivo
-- [components/bunny/network/discovery.h](components/bunny/network/discovery.h) — Discovery UDP
+- [components/bunny/registry/registry.h](../components/bunny/registry/registry.h) — Registro central y serialización JSON
+- [components/bunny/config/config.h](../components/bunny/config/config.h) — Carga de configuración del dispositivo
+- [components/bunny/network/discovery.h](../components/bunny/network/discovery.h) — Discovery UDP
 - [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — Visión general del flujo de red (WiFi + UDP + WebSocket)
-- [components/bunny/utils/json_builder.h](components/bunny/utils/json_builder.h) — Helper JSON sin dependencias
+- [components/bunny/utils/json_builder.h](../components/bunny/utils/json_builder.h) — Helper JSON sin dependencias
 
 ## Flujo de arranque esperado
 
@@ -238,7 +238,7 @@ idf.py -p <PORT> flash monitor
 
 ## Configuración del dispositivo
 
-Ver [config/device.json](config/device.json) para configurar:
+Ver [config/device.json](../config/device.json) para configurar:
 
 - **Identidad del dispositivo**: `id`, `name`, `description`, `version`
 - **Discovery UDP**: puerto y intervalo de broadcast

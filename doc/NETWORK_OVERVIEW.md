@@ -52,7 +52,7 @@ El ESP32 transmite un JSON de descubrimiento con:
 
 ### Dónde se configura
 
-En [config/device.json](config/device.json):
+En [config/device.json](../config/device.json):
 
 - `discovery.enabled`
 - `discovery.udp_port`
@@ -81,7 +81,7 @@ Transportar mensajes de operación:
 
 ## Configuración de red
 
-La configuración de WiFi y transporte vive en [config/device.json](config/device.json):
+La configuración de WiFi y transporte vive en [config/device.json](../config/device.json):
 
 - `network.wifi.ssid`
 - `network.wifi.password`
@@ -114,8 +114,8 @@ La configuración de WiFi y transporte vive en [config/device.json](config/devic
 
 ## Archivos relevantes
 
-- [components/bunny/network/wifi.c](components/bunny/network/wifi.c)
-- [components/bunny/network/discovery.c](components/bunny/network/discovery.c)
-- [components/bunny/network/network.c](components/bunny/network/network.c)
-- [components/bunny/config/config.c](components/bunny/config/config.c)
-- [components/bunny/bunny_sdk.cpp](components/bunny/bunny_sdk.cpp)
+- [components/bunny/network/wifi.c](../components/bunny/network/wifi.c)
+- [components/bunny/network/discovery.c](../components/bunny/network/discovery.c)
+- [components/bunny/network/network.c](../components/bunny/network/network.c)
+- [components/bunny/config/config.c](../components/bunny/config/config.c)
+- [components/bunny/bunny_sdk.cpp](../components/bunny/bunny_sdk.cpp)

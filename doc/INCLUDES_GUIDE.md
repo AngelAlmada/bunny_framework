@@ -100,7 +100,7 @@ El patrón completo es siempre este:
 **Por qué primero el propio header:**  
 Incluirlo primero obliga al compilador a verificar que el header es autosuficiente (no depende silenciosamente de algo que ya estaba en memoria). Si hay un error ahí, lo detectas inmediatamente en ese módulo, no en quien lo importa.
 
-**Ejemplo real:** [main/commands/fan_command.cpp](main/commands/fan_command.cpp)
+**Ejemplo real:** [main/commands/fan_command.cpp](../main/commands/fan_command.cpp)
 
 ```cpp
 #include "fan_command.h"
@@ -154,7 +154,7 @@ void register_fan_command();
 
 El header del módulo solo declara la firma de `register_*`. Nada más. Cualquier detail de implementación pertenece al `.cpp`.
 
-**Ejemplo real:** [main/events/motion_event.h](main/events/motion_event.h)
+**Ejemplo real:** [main/events/motion_event.h](../main/events/motion_event.h)
 
 ---
 
@@ -171,7 +171,7 @@ El header del módulo solo declara la firma de `register_*`. Nada más. Cualquie
 **Por qué incluye los headers de módulos en vez de los `.cpp`:**  
 El compilador nunca incluye `.cpp` directamente. Cada `.cpp` se compila como unidad de traducción independiente. El header declara la función `register_*`, el linker une todo después.
 
-**Ejemplo real:** [main/bunny_framework.c](main/bunny_framework.c)
+**Ejemplo real:** [main/bunny_framework.c](../main/bunny_framework.c)
 
 ---
 
@@ -181,10 +181,10 @@ Cada módulo expone exactamente una función pública en su `.h`:
 
 | Módulo | Función expuesta |
 |--------|-----------------|
-| [main/commands/fan_command.h](main/commands/fan_command.h) | `void register_fan_command()` |
-| [main/events/motion_event.h](main/events/motion_event.h) | `void register_motion_event()` |
-| [main/sensors/temperature_sensor.h](main/sensors/temperature_sensor.h) | `void register_temperature_sensor()` |
-| [main/states/fan_state.h](main/states/fan_state.h) | `void register_fan_state()` |
+| [main/commands/fan_command.h](../main/commands/fan_command.h) | `void register_fan_command()` |
+| [main/events/motion_event.h](../main/events/motion_event.h) | `void register_motion_event()` |
+| [main/sensors/temperature_sensor.h](../main/sensors/temperature_sensor.h) | `void register_temperature_sensor()` |
+| [main/states/fan_state.h](../main/states/fan_state.h) | `void register_fan_state()` |
 
 Esa función es el único contrato entre el módulo y `bunny_framework.c`. Todo lo que hace internamente (builders, lambdas, hardware) es detalleprivado del `.cpp`.
 
