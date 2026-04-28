@@ -140,6 +140,13 @@ void BunnySDK::loop() {
             discovery_active = false;
         }
 
+        if (!ws_connected && !discovery_active) {
+            bunny_discovery_start();
+            ESP_LOGI(TAG, "FLOW[3/4] UDP discovery resumed after WebSocket disconnect");
+            discovery_active = true;
+            stage4_logged = false;
+        }
+
         ESP_LOGI(TAG,
                  "Heartbeat: wifi=%s announces=%lu websocket=%s",
                  wifi_connected ? "connected" : "waiting",

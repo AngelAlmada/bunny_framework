@@ -92,6 +92,7 @@ Criterios de exito de alto nivel:
 ### 1.4 Invariantes globales BCP
 
 - Un motor MUST completar handshake de conexion antes de enviar mensajes de ejecucion de capacidades.
+- Un ESP32 MUST aceptar una sola sesion de motor activa a la vez; conexiones adicionales MUST ser rechazadas para evitar trafico cruzado.
 - Todo mensaje de ejecucion MUST incluir `correlation_id`. [NO IMPLEMENTADO EN PARSEO DE DISPOSITIVO]
 - Si el heartbeat vence, el estado de sesion MUST transicionar a `Reconnecting`. [NO IMPLEMENTADO EN MAQUINA DE ESTADOS DE CODIGO]
 - El anuncio UDP MUST incluir endpoint WebSocket (`ip`, `webhook_port`, `webhook_path`) para habilitar conexion.
@@ -403,7 +404,8 @@ sequenceDiagram
 Estado de implementacion: Parcial.
 
 - Handshake RFC6455 de transporte: Implementado (HTTP Upgrade en ESP32).
-- Handshake BCP de aplicacion (JSON inicial): [NO IMPLEMENTADO].
+- Handshake BCP de aplicacion (JSON inicial): Implementado (validacion de `handshake_init` + `handshake_ack`/`handshake_error`).
+- Multiples motores concurrentes por ESP32: no permitido; conexiones adicionales se rechazan con `409 Conflict`.
 
 Fuentes:
 
@@ -423,10 +425,11 @@ Establecer una sesion WebSocket valida entre motor (cliente) y ESP32 (servidor).
 ### 4.3 Flujo paso a paso
 
 1. Motor envia HTTP Upgrade WebSocket a `webhook_path`.
-2. ESP32 acepta handshake de transporte.
-3. ESP32 marca `s_ws_connected = true`.
-4. Sesion queda activa para frames de texto.
-5. Handshake BCP de aplicacion: [NO IMPLEMENTADO].
+2. ESP32 acepta handshake de transporte solo si no existe otro motor activo.
+3. Motor envia primer frame JSON `handshake_init`.
+4. ESP32 valida `type`, `engine_id`, `protocol_version` y `capabilities`.
+5. ESP32 responde `handshake_ack` si es valido o `handshake_error` si falla.
+6. Solo despues de `handshake_ack` la sesion se considera conectada para trafico BCP.
 
 ### 4.4 Formato exacto del mensaje
 
@@ -452,7 +455,7 @@ Direccion: Motor -> ESP32
 }
 ```
 
-Estado: [NO IMPLEMENTADO]
+Estado: Implementado.
 
 ### 4.5 Campos obligatorios y opcionales
 
@@ -473,7 +476,12 @@ Campos minimos exigidos por BCP:
 Validaciones actuales en ESP32:
 
 - valida framing WebSocket a nivel transporte.
-- no valida schema de payload de handshake BCP. [NO IMPLEMENTADO]
+- valida payload handshake BCP con reglas minimas:
+  - `type` MUST ser `handshake_init`.
+  - `engine_id` MUST ser string no vacio.
+  - `protocol_version` MUST coincidir con la version soportada por firmware (`0.1.0`).
+  - `capabilities` MUST existir y MUST ser objeto JSON.
+- si hay un motor activo distinto, el servidor MUST rechazar una nueva conexion HTTP Upgrade con `409 Conflict`.
 
 Validaciones requeridas:
 
@@ -483,7 +491,7 @@ Validaciones requeridas:
 
 ### 4.8 Respuesta exitosa
 
-Mensaje esperado: `bcp_handshake_ack` [NO IMPLEMENTADO]
+Mensaje esperado: `bcp_handshake_ack` (Implementado)
 
 ```json
 {
@@ -505,9 +513,10 @@ Errores requeridos:
 
 Estado actual:
 
-- No hay respuesta JSON de error de aplicacion; solo errores de lectura WebSocket/logs.
+- El servidor responde `handshake_error` en payload invalido o version no soportada.
+- Si ya existe otro motor activo, el servidor rechaza el upgrade HTTP con `409 Conflict` y body JSON con `ENGINE_ALREADY_CONNECTED`.
 
-Mensaje normativo propuesto: `bcp_handshake_error` [NO IMPLEMENTADO]
+Mensaje normativo: `bcp_handshake_error` (Implementado)
 
 ```json
 {
@@ -521,7 +530,9 @@ Mensaje normativo propuesto: `bcp_handshake_error` [NO IMPLEMENTADO]
 
 - cliente abre TCP pero no completa upgrade: MUST no marcar conectado.
 - cliente envia frames no enmascarados: MUST cerrar/rechazar segun libreria.
-- doble handshake de aplicacion en misma sesion: [PENDIENTE DE DEFINIR].
+- motor envia mensaje de negocio antes de handshake: MUST rechazarse y cerrar sesion.
+- segundo motor intenta conectar con sesion activa: MUST rechazarse con `409 Conflict`.
+- doble handshake de aplicacion en misma sesion: SHOULD tratarse como error de protocolo.
 
 ### 4.11 Timeouts
 
@@ -546,8 +557,9 @@ Mensaje normativo propuesto: `bcp_handshake_error` [NO IMPLEMENTADO]
 ### 4.15 Estado de implementacion
 
 - Transporte WebSocket: Implementado.
-- Handshake BCP JSON: Planeado.
-- Catalogo de errores de handshake JSON: Planeado.
+- Handshake BCP JSON: Implementado (validacion minima + ack/error).
+- Sesion unica por dispositivo: Implementado.
+- Catalogo de errores de handshake JSON: Parcial (cobertura inicial, extensible).
 
 #### JSON Schema: `bcp_handshake_init` (normativo)
 
@@ -616,12 +628,13 @@ stateDiagram-v2
 - 4.1 Proposito: el motor inicia y el ESP32 responde; la meta es pasar de descubrimiento sin estado a sesion bidireccional estable.
 - 4.2 Precondiciones: sin endpoint valido y cliente RFC6455 correcto, el handshake puede fallar aunque la red IP funcione.
 - 4.3 Flujo: el paso 2 (upgrade exitoso) habilita transporte, pero no valida semantica BCP de aplicacion; por eso se separan dos fases.
-- 4.4 Formato: actualmente solo existe handshake de transporte; el handshake JSON `handshake_init` es contrato objetivo documentado para evitar divergencia futura.
+- 4.4 Formato: el handshake de transporte habilita el canal y el handshake JSON `handshake_init` habilita la semantica BCP; ambas fases son necesarias para considerar la sesion operativa.
 - 4.5 Campos: `engine_id`, `protocol_version` y `capabilities` identifican al motor, su dialecto de protocolo y funciones opcionales.
 - 4.6 Restricciones: si `protocol_version` no cumple formato acordado, el receptor debe rechazar negociacion para evitar comportamientos no deterministas.
 - 4.7 Validaciones: en estado actual el ESP32 valida framing pero no payload semantico; por eso un motor compatible debe auto-validar su propio mensaje antes de enviar.
-- 4.8 Exito: el `handshake_ack` define explicitamente aceptacion de sesion a nivel BCP; hoy ese ACK no existe, por lo que la aceptacion se infiere por socket abierto.
-- 4.9 Error: los errores listados permiten rechazo explicito y auditable; sin ellos, el motor solo observa cierres/errores de transporte sin causa semantica.
+- 4.7 Validaciones: el ESP32 valida campos minimos de handshake y version de protocolo; un payload invalido se rechaza antes de habilitar trafico de negocio.
+- 4.8 Exito: el `handshake_ack` confirma explicitamente aceptacion de sesion a nivel BCP y habilita estado conectado real.
+- 4.9 Error: el rechazo semantico se comunica con `handshake_error`, y el rechazo por concurrencia de motores se comunica con `409 Conflict` en el upgrade.
 - 4.10 Edge cases: abrir TCP no equivale a sesion BCP; la sesion solo existe tras upgrade valido y posterior intercambio de protocolo cuando se implemente.
 - 4.11 Timeouts: deben parametrizarse para distinguir "red lenta" de "peer no compatible"; esa diferencia evita reconexiones agresivas innecesarias.
 - 4.12 Reintentos: el backoff evita tormentas de reconexion cuando hay caida de red o reinicio del dispositivo.
@@ -635,8 +648,8 @@ stateDiagram-v2
 Estado de implementacion: Parcial.
 
 - Heartbeat de log local cada 5 segundos: Implementado.
-- Heartbeat de protocolo JSON ping/pong: [NO IMPLEMENTADO].
-- Politica de timeout y reconexion en dispositivo: [NO IMPLEMENTADO].
+- Heartbeat de protocolo JSON: Implementado en modo basico (`heartbeat`/`heartbeat_ping` con respuesta `heartbeat_ack`/`heartbeat_pong`).
+- Politica de timeout y reconexion en dispositivo: [PENDIENTE DE DEFINIR] (la politica principal vive en el motor).
 
 Fuentes:
 
@@ -658,11 +671,11 @@ Detectar sesiones degradadas y disparar reconexion controlada.
 3. Motor evalua timeout.
 4. Si vence timeout, motor cierra sesion y reconecta.
 
-Pasos 1-2 en JSON BCP: [NO IMPLEMENTADO].
+Pasos 1-2 en JSON BCP: Implementados en modo basico.
 
 ### 5.4 Formato exacto del mensaje
 
-Mensaje normativo: `heartbeat_ping` [NO IMPLEMENTADO]
+Mensaje normativo: `heartbeat_ping` (Implementado)
 
 ```json
 {
@@ -672,7 +685,7 @@ Mensaje normativo: `heartbeat_ping` [NO IMPLEMENTADO]
 }
 ```
 
-Respuesta normativa: `heartbeat_pong` [NO IMPLEMENTADO]
+Respuesta normativa: `heartbeat_pong` (Implementado)
 
 ```json
 {
@@ -695,7 +708,7 @@ Respuesta normativa: `heartbeat_pong` [NO IMPLEMENTADO]
 
 ### 5.7 Validaciones
 
-- Validacion de schema heartbeat en ESP32: [NO IMPLEMENTADO].
+- Validacion de schema heartbeat en ESP32: Parcial (validacion minima de `type`; acepta formato simple y correlacionado).
 
 ### 5.8 Respuesta exitosa
 
@@ -705,7 +718,7 @@ Respuesta normativa: `heartbeat_pong` [NO IMPLEMENTADO]
 ### 5.9 Respuestas de error
 
 - Mensaje JSON `heartbeat_error`: [NO IMPLEMENTADO].
-- En practica actual, error se refleja como cierre de socket o timeout de cliente.
+- En practica actual, error se refleja como cierre de socket o timeout de cliente cuando no llega `heartbeat_ack`/`heartbeat_pong`.
 
 ### 5.10 Casos limite
 
@@ -734,7 +747,8 @@ Respuesta normativa: `heartbeat_pong` [NO IMPLEMENTADO]
 ### 5.15 Estado de implementacion
 
 - Health logging local: Implementado.
-- Ping/pong semantico BCP: Planeado.
+- Heartbeat semantico BCP (modo basico): Implementado.
+- Timeout y politica formal de watchdog en firmware: [PENDIENTE DE DEFINIR].
 
 #### JSON Schema: `heartbeat_ping` (normativo)
 
@@ -785,7 +799,7 @@ Explicacion semantica:
 - 5.4 Formato: `correlation_id` permite distinguir respuestas de pings concurrentes y evitar confundir un pong atrasado con uno vigente.
 - 5.5 Campos: `type` identifica semantica del frame y `correlation_id` establece trazabilidad; `ts` mejora diagnostico pero no es estrictamente necesario.
 - 5.6 Restricciones: la unicidad temporal de `correlation_id` evita colision de mediciones y falsos positivos de salud.
-- 5.7 Validaciones: al no validar schema en firmware, un motor debe tratar heartbeat JSON como contrato futuro y usar ping/pong de libreria en presente.
+- 5.7 Validaciones: el firmware valida tipo de mensaje y responde heartbeat, pero la evaluacion estricta de timeout y watchdog sigue siendo responsabilidad del motor.
 - 5.8 Exito: un pong correlacionado y dentro de timeout confirma liveness aplicativa; socket abierto sin respuesta no implica salud.
 - 5.9 Error: actualmente el error es implicito (timeout/cierre). El objetivo BCP es hacerlo explicito con `heartbeat_error` para observabilidad.
 - 5.10 Edge cases: un pong atrasado despues de timeout debe descartarse para no reanimar una sesion ya dada por muerta.
@@ -1452,7 +1466,8 @@ Interpretacion operativa:
 |---|---|---|---|
 | Discovery UDP broadcast | Implementado | `components/bunny/network/discovery.c`, `components/bunny/network/discovery.h` | Emision periodica real con payload JSON |
 | Conexion WebSocket (transporte) | Implementado | `components/bunny/network/network.c`, `components/bunny/network/network.h` | Handshake RFC6455 y recepcion de frames |
-| Handshake BCP JSON | Planeado | `components/bunny/protocol/protocol.c`, `components/bunny/protocol/protocol.h` | Archivo existe, logica TODO |
+| Handshake BCP JSON | Implementado (basico) | `components/bunny/network/network.c` | Valida `handshake_init`, responde `handshake_ack/handshake_error` |
+| Control de concurrencia de motores | Implementado | `components/bunny/network/network.c` | Solo un motor activo por ESP32; nuevos intentos reciben `409 Conflict` |
 | Heartbeat de protocolo JSON | Planeado | `components/bunny/runtime/runtime.c`, `components/bunny/runtime/runtime.h` | Runtime TODO; heartbeat actual es log local |
 | Ejecucion de capacidades por mensajes | Planeado | `components/bunny/protocol/protocol.c`, `components/bunny/runtime/runtime.c`, `components/bunny/registry/registry.cpp` | Registry y hooks listos; falta dispatcher wire |
 | Reporte de eventos al motor | Planeado | `components/bunny/bunny_sdk.cpp` | `BunnySDK::emit` tiene TODO de envio en red |
@@ -1490,9 +1505,9 @@ Estado: [PENDIENTE DE DEFINIR EN IMPLEMENTACION].
 | Message Type | Direccion | Estado |
 |---|---|---|
 | udp_discovery_announce | ESP32 -> Broadcast | Implementado |
-| handshake_init | Motor -> ESP32 | Planeado |
-| handshake_ack | ESP32 -> Motor | Planeado |
-| handshake_error | ESP32 -> Motor | Planeado |
+| handshake_init | Motor -> ESP32 | Implementado |
+| handshake_ack | ESP32 -> Motor | Implementado |
+| handshake_error | ESP32 -> Motor | Implementado |
 | heartbeat_ping | Motor -> ESP32 | Planeado |
 | heartbeat_pong | ESP32 -> Motor | Planeado |
 | capability_execute_request | Motor -> ESP32 | Planeado |

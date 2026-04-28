@@ -86,20 +86,21 @@ Secuencia esperada:
 2. Construye la URL WebSocket.
 3. Abre la conexión como cliente.
 4. Espera confirmación de handshake (`on_open`).
-5. Marca el dispositivo como `connected`.
-6. Comienza a intercambiar mensajes JSON.
-7. Mantiene la sesión con ping/pong o heartbeat equivalente.
-8. Si falla, marca `disconnected` y reintenta.
+5. Envía inmediatamente el handshake de aplicación `handshake_init`.
+6. Espera `handshake_ack` del dispositivo.
+7. Solo después de `handshake_ack` marca el dispositivo como `connected`.
+8. Comienza a intercambiar mensajes JSON.
+9. Mantiene la sesión con ping/pong o heartbeat equivalente.
+10. Si falla, marca `disconnected` y reintenta.
 
 ---
 
 ## 5. Cuándo considerar que la conexión quedó activa
 
-El motor debe considerar conectada una sesión solo cuando ocurra una de estas condiciones equivalentes:
+El motor debe considerar conectada una sesión solo cuando se cumplan ambas condiciones:
 
-1. La librería WebSocket dispara `on_open`.
-2. El estado del socket pasa a `OPEN`.
-3. Se completa el handshake HTTP Upgrade sin error.
+1. La librería WebSocket dispara `on_open` (handshake HTTP Upgrade completado).
+2. El dispositivo responde `handshake_ack` al mensaje `handshake_init`.
 
 No considerar conectado solo porque:
 
@@ -109,6 +110,8 @@ No considerar conectado solo porque:
 - se resolvió la IP.
 
 UDP descubre. WebSocket conecta.
+
+Y en BCP actual: `handshake_ack` habilita sesión de aplicación.
 
 ---
 
@@ -120,9 +123,37 @@ La validación debe hacerse en dos niveles.
 
 El motor debe exigir:
 
-1. handshake exitoso,
+1. handshake de transporte WebSocket exitoso,
 2. socket abierto,
-3. sin error de protocolo.
+3. `handshake_ack` de aplicación,
+4. sin error de protocolo.
+
+#### Handshake de aplicación esperado
+
+Solicitud del motor (`handshake_init`):
+
+```json
+{
+  "type": "handshake_init",
+  "engine_id": "engine-main-01",
+  "protocol_version": "0.1.0",
+  "capabilities": {
+    "supports_async": true,
+    "supports_ack": true
+  }
+}
+```
+
+Respuesta exitosa del ESP32 (`handshake_ack`):
+
+```json
+{
+  "type": "handshake_ack",
+  "status": "ok",
+  "device_id": "esp32-001",
+  "protocol_version": "0.1.0"
+}
+```
 
 ### Validación de continuidad
 
@@ -152,6 +183,12 @@ El motor debe implementar reconexión con estas reglas:
 3. Usar backoff progresivo.
 4. No abrir conexiones en paralelo al mismo endpoint para “probar suerte”.
 5. Limpiar estado de mensajes pendientes al cerrar la sesión.
+6. Reenviar `handshake_init` en cada nueva sesión WebSocket (nunca asumir estado previo).
+
+Regla de concurrencia del dispositivo:
+
+- Bunny solo permite un motor activo por ESP32.
+- Si un segundo motor intenta conectar mientras hay sesión activa, Bunny rechaza el upgrade con `409 Conflict` y error `ENGINE_ALREADY_CONNECTED`.
 
 Backoff recomendado:
 
