@@ -1,4 +1,4 @@
-# Motor de Procesos — Descubrimiento, Conexión y Validación
+º# Motor de Procesos — Descubrimiento, Conexión y Validación
 
 Guía práctica para implementar correctamente el lado del motor de procesos al trabajar con Bunny Framework.
 

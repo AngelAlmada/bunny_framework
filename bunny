@@ -74,30 +74,6 @@ def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
     subprocess.run(full, check=True)
 
 
-def run_flash_with_retry(idf_cmd: list[str], port: str, baud: str) -> None:
-    flash_args = ["-p", port, "-b", baud, "flash"]
-    try:
-        run_cmd(idf_cmd, flash_args)
-        return
-    except subprocess.CalledProcessError as first_exc:
-        print(
-            "[bunny] Flash failed on first try. "
-            "This is often a transient serial issue (chip stopped responding)."
-        )
-        print("[bunny] Retrying flash once...")
-        try:
-            run_cmd(idf_cmd, flash_args)
-            print("[bunny] Flash succeeded on retry.")
-            return
-        except subprocess.CalledProcessError:
-            print(
-                "[bunny] Flash failed again. Check USB cable/power, close serial monitors, "
-                "and confirm the correct port.",
-                file=sys.stderr,
-            )
-            raise first_exc
-
-
 def main() -> int:
     args = sys.argv[1:]
     if not args or args[0] in {"-h", "--help", "help"}:
@@ -124,13 +100,13 @@ def main() -> int:
 
     try:
         if len(args) == 1:
-            run_flash_with_retry(idf_cmd, port, baud)
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
             return 0
 
         if len(args) == 2 and args[1] == "clean":
             run_cmd(idf_cmd, ["fullclean"])
             run_cmd(idf_cmd, ["reconfigure"])
-            run_flash_with_retry(idf_cmd, port, baud)
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
             return 0
 
         usage()

@@ -4,6 +4,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 
 ## 📚 Índice de documentación
 
+- [BCP - Especificación del Bunny Communication Protocol](#bcp---especificación-del-bunny-communication-protocol)
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
 - [INCLUDES_GUIDE.md](INCLUDES_GUIDE.md) — **Qué incluir en cada archivo y por qué** (bunny_sdk.h vs bunny.h, árbol de includes, tabla de referencia rápida)
 - [PROCESS_ENGINE_CONNECTION_GUIDE.md](PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
@@ -16,6 +17,10 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Archivos Clave del SDK](#archivos-clave-del-sdk)
 - [Configuración del Dispositivo](#configuración-del-dispositivo)
+
+## BCP - Especificación del Bunny Communication Protocol
+
+- [BCP_SPECIFICATION.md](BCP_SPECIFICATION.md) — **Especificación oficial de protocolo** (discovery, handshake, heartbeat, ejecución de capacidades, eventos, validación JSON, estado de implementación y brechas pendientes)
 
 ## Documentación de tesis
 
