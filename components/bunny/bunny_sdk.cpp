@@ -193,4 +193,11 @@ void bunny_loop(void) {
     Bunny.loop();
 }
 
+size_t bunny_serialize_capabilities(char* buf, size_t len) {
+    if (!buf || len == 0) {
+        return 0;
+    }
+    return bunny::Registry::instance().serialize_capabilities(buf, len);
+}
+
 } // extern "C"

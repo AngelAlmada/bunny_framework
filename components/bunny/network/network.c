@@ -1,6 +1,7 @@
 #include "network.h"
 #include "wifi.h"
 #include "../config/config.h"
+#include "../include/bunny.h"
 
 #include "esp_http_server.h"
 #include "esp_log.h"
@@ -129,6 +130,64 @@ static esp_err_t ws_send_handshake_error(httpd_req_t* req,
     return ws_send_text(req, payload);
 }
 
+static esp_err_t ws_send_capabilities_manifest(httpd_req_t* req)
+{
+    const size_t cap_buf_len = 8192;
+    char* capabilities_json = (char*)malloc(cap_buf_len);
+    if (!capabilities_json) {
+        ESP_LOGE(TAG, "No memory for capabilities buffer");
+        return ESP_ERR_NO_MEM;
+    }
+
+    size_t cap_len = bunny_serialize_capabilities(capabilities_json, cap_buf_len);
+    if (cap_len == 0) {
+        ESP_LOGE(TAG, "Capabilities serialization failed");
+        free(capabilities_json);
+        return ESP_FAIL;
+    }
+
+    // Registry serialization truncates to len-1; detect near-capacity payloads as unsafe.
+    if (cap_len >= cap_buf_len - 1) {
+        ESP_LOGE(TAG, "Capabilities payload too large for current buffer");
+        free(capabilities_json);
+        return ESP_ERR_NO_MEM;
+    }
+
+    const bunny_config_t* cfg = bunny_config_get();
+    const char* device_id = (cfg && cfg->device.id) ? cfg->device.id : "unknown";
+
+    size_t payload_len = cap_len + 256;
+    char* payload = (char*)malloc(payload_len);
+    if (!payload) {
+        ESP_LOGE(TAG, "No memory for capabilities manifest payload");
+        free(capabilities_json);
+        return ESP_ERR_NO_MEM;
+    }
+
+    int written = snprintf(payload, payload_len,
+                           "{\"type\":\"capabilities_manifest\",\"status\":\"ok\",\"device_id\":\"%s\",\"protocol_version\":\"%s\",\"capabilities\":%s}",
+                           device_id,
+                           BCP_PROTOCOL_VERSION,
+                           capabilities_json);
+    if (written <= 0 || (size_t)written >= payload_len) {
+        ESP_LOGE(TAG, "Capabilities payload too large");
+        free(payload);
+        free(capabilities_json);
+        return ESP_ERR_NO_MEM;
+    }
+
+    ESP_LOGI(TAG, "Capabilities manifest payload: %s", payload);
+
+    esp_err_t ret = ws_send_text(req, payload);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Capabilities manifest sent (%u bytes)", (unsigned)cap_len);
+    }
+
+    free(payload);
+    free(capabilities_json);
+    return ret;
+}
+
 static esp_err_t ws_handle_app_handshake(httpd_req_t* req, const char* payload)
 {
     char type[32] = {0};
@@ -175,6 +234,13 @@ static esp_err_t ws_handle_app_handshake(httpd_req_t* req, const char* payload)
     s_active_engine_id[sizeof(s_active_engine_id) - 1] = '\0';
     ESP_LOGI(TAG, "BCP handshake accepted (engine_id=%s protocol_version=%s)",
              s_active_engine_id, BCP_PROTOCOL_VERSION);
+
+    ret = ws_send_capabilities_manifest(req);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to send capabilities manifest after handshake");
+        return ret;
+    }
+
     return ESP_OK;
 }
 
@@ -211,6 +277,10 @@ static esp_err_t ws_handle_post_handshake_text(httpd_req_t* req, const char* pay
                      s_active_engine_id[0] ? s_active_engine_id : "unknown");
         }
         return ret;
+    }
+
+    if (strcmp(type, "capabilities_request") == 0) {
+        return ws_send_capabilities_manifest(req);
     }
 
     ESP_LOGI(TAG, "WebSocket message received (engine=%s): %s",

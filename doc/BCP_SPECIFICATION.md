@@ -429,7 +429,8 @@ Establecer una sesion WebSocket valida entre motor (cliente) y ESP32 (servidor).
 3. Motor envia primer frame JSON `handshake_init`.
 4. ESP32 valida `type`, `engine_id`, `protocol_version` y `capabilities`.
 5. ESP32 responde `handshake_ack` si es valido o `handshake_error` si falla.
-6. Solo despues de `handshake_ack` la sesion se considera conectada para trafico BCP.
+6. ESP32 envia `capabilities_manifest` con capacidades registradas.
+7. Solo despues de `handshake_ack` la sesion se considera conectada para trafico BCP.
 
 ### 4.4 Formato exacto del mensaje
 
@@ -499,6 +500,23 @@ Mensaje esperado: `bcp_handshake_ack` (Implementado)
   "status": "ok",
   "device_id": "esp32-001",
   "protocol_version": "0.1.0"
+}
+```
+
+Mensaje inmediato posterior esperado: `capabilities_manifest` (Implementado)
+
+```json
+{
+  "type": "capabilities_manifest",
+  "status": "ok",
+  "device_id": "esp32-001",
+  "protocol_version": "0.1.0",
+  "capabilities": {
+    "sensors": [],
+    "commands": [],
+    "events": [],
+    "states": []
+  }
 }
 ```
 
@@ -942,6 +960,7 @@ Mapeo a codigo actual: [PENDIENTE DE DEFINIR] (no hay errores estructurados en w
 ### 6.15 Estado de implementacion
 
 - Registro de capacidades y metadata: Implementado.
+- Exposicion de manifiesto `capabilities_manifest` tras handshake: Implementado.
 - Transporte de ejecucion desde red hasta hook: Planeado.
 
 ### 6.16 Catalogo actual de capacidades de ejemplo
@@ -1467,8 +1486,9 @@ Interpretacion operativa:
 | Discovery UDP broadcast | Implementado | `components/bunny/network/discovery.c`, `components/bunny/network/discovery.h` | Emision periodica real con payload JSON |
 | Conexion WebSocket (transporte) | Implementado | `components/bunny/network/network.c`, `components/bunny/network/network.h` | Handshake RFC6455 y recepcion de frames |
 | Handshake BCP JSON | Implementado (basico) | `components/bunny/network/network.c` | Valida `handshake_init`, responde `handshake_ack/handshake_error` |
+| Exposicion de capacidades | Implementado | `components/bunny/network/network.c`, `components/bunny/registry/registry.cpp` | Envia `capabilities_manifest` tras handshake y ante `capabilities_request` |
 | Control de concurrencia de motores | Implementado | `components/bunny/network/network.c` | Solo un motor activo por ESP32; nuevos intentos reciben `409 Conflict` |
-| Heartbeat de protocolo JSON | Planeado | `components/bunny/runtime/runtime.c`, `components/bunny/runtime/runtime.h` | Runtime TODO; heartbeat actual es log local |
+| Heartbeat de protocolo JSON | Implementado (basico) | `components/bunny/network/network.c` | Responde `heartbeat_ack`/`heartbeat_pong`; watchdog formal sigue en motor |
 | Ejecucion de capacidades por mensajes | Planeado | `components/bunny/protocol/protocol.c`, `components/bunny/runtime/runtime.c`, `components/bunny/registry/registry.cpp` | Registry y hooks listos; falta dispatcher wire |
 | Reporte de eventos al motor | Planeado | `components/bunny/bunny_sdk.cpp` | `BunnySDK::emit` tiene TODO de envio en red |
 | Validacion JSON por schema | Planeado | `components/bunny/protocol/protocol.c` | No hay parser/validator activo |
@@ -1508,6 +1528,8 @@ Estado: [PENDIENTE DE DEFINIR EN IMPLEMENTACION].
 | handshake_init | Motor -> ESP32 | Implementado |
 | handshake_ack | ESP32 -> Motor | Implementado |
 | handshake_error | ESP32 -> Motor | Implementado |
+| capabilities_manifest | ESP32 -> Motor | Implementado |
+| capabilities_request | Motor -> ESP32 | Implementado |
 | heartbeat_ping | Motor -> ESP32 | Planeado |
 | heartbeat_pong | ESP32 -> Motor | Planeado |
 | capability_execute_request | Motor -> ESP32 | Planeado |

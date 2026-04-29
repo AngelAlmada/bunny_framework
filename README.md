@@ -27,27 +27,28 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 ## 📚 Índice de documentación
 
 - [BCP - Especificación del Bunny Communication Protocol](#bcp---especificación-del-bunny-communication-protocol)
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
-- [INCLUDES_GUIDE.md](INCLUDES_GUIDE.md) — **Qué incluir en cada archivo y por qué** (bunny_sdk.h vs bunny.h, árbol de includes, tabla de referencia rápida)
-- [PROCESS_ENGINE_CONNECTION_GUIDE.md](PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
-- [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
-- [GLOSARIO.md](GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
-- [BUNNY_PROGRAMMING_PHILOSOPHY.md](BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
-- [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
+- [DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
+- [INCLUDES_GUIDE.md](doc/INCLUDES_GUIDE.md) — **Qué incluir en cada archivo y por qué** (bunny_sdk.h vs bunny.h, árbol de includes, tabla de referencia rápida)
+- [PROCESS_ENGINE_CONNECTION_GUIDE.md](doc/PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
+- [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](doc/PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
+- [GLOSARIO.md](doc/GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
+- [FRAMEWORK_VS_LIBRARY.md](doc/FRAMEWORK_VS_LIBRARY.md) — **¿Por qué Bunny es un Framework y no una Librería?** (Diferencias fundamentales, control de flujo, estructura, patrones, filosofía)
+- [BUNNY_PROGRAMMING_PHILOSOPHY.md](doc/BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
+- [NETWORK_OVERVIEW.md](doc/NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
 - [Documentación de tesis](#documentación-de-tesis)
-- [Ejemplos de Capacidades](#ejemplos-de-capacidades-ejemplo-módulos)
+- [Ejemplos de Capacidades](#ejemplos-de-capacidades-módulos-de-ejemplo)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Archivos Clave del SDK](#archivos-clave-del-sdk)
 - [Configuración del Dispositivo](#configuración-del-dispositivo)
 
 ## BCP - Especificación del Bunny Communication Protocol
 
-- [BCP_SPECIFICATION.md](BCP_SPECIFICATION.md) — **Especificación oficial de protocolo** (discovery, handshake, heartbeat, ejecución de capacidades, eventos, validación JSON, estado de implementación y brechas pendientes)
+- [BCP_SPECIFICATION.md](doc/BCP_SPECIFICATION.md) — **Especificación oficial de protocolo** (discovery, handshake, heartbeat, ejecución de capacidades, eventos, validación JSON, estado de implementación y brechas pendientes)
 
 ## Documentación de tesis
 
-- [DOCUMENTACION_TESIS_PRINCIPAL.md](DOCUMENTACION_TESIS_PRINCIPAL.md) — Versión condensada para el cuerpo principal de tesis (arquitectura, flujo y evidencia de implementación)
-- [DOCUMENTACION_TESIS_ANEXOS.md](DOCUMENTACION_TESIS_ANEXOS.md) — Versión extendida para anexos (detalles técnicos, decisiones y fragmentos adicionales de código)
+- [DOCUMENTACION_TESIS_PRINCIPAL.md](doc/DOCUMENTACION_TESIS_PRINCIPAL.md) — Versión condensada para el cuerpo principal de tesis (arquitectura, flujo y evidencia de implementación)
+- [DOCUMENTACION_TESIS_ANEXOS.md](doc/DOCUMENTACION_TESIS_ANEXOS.md) — Versión extendida para anexos (detalles técnicos, decisiones y fragmentos adicionales de código)
 
 ## Objetivo
 

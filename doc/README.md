@@ -12,6 +12,8 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [HANDSHAKE_IMPLEMENTATION_GUIDE.md](HANDSHAKE_IMPLEMENTATION_GUIDE.md) — **Guía implementador del handshake BCP** (pasos obligatorios, validaciones, errores, timeout y política de un solo motor por ESP32)
 - [HEARTBEAT_IMPLEMENTATION_GUIDE.md](HEARTBEAT_IMPLEMENTATION_GUIDE.md) — **Guía implementador del heartbeat BCP** (mensajes soportados, timeouts, watchdog, reconexión y manejo de sesiones inestables)
 - [MOTOR_WEBSOCKET_PERSISTENCE_BUG_REPORT.md](MOTOR_WEBSOCKET_PERSISTENCE_BUG_REPORT.md) — **Reporte de bug para desarrollador del motor** (análisis del ciclo reconnect, socket inválido, heartbeat ok y checklist de depuración)
+- [CAPABILITIES_EXPOSURE_GUIDE.md](CAPABILITIES_EXPOSURE_GUIDE.md) — **Exposición del manifiesto de capacidades** (envío automático post-handshake, refresh por request y consumo en motor)
+- [MOTOR_CAPABILITIES_MANIFEST_BUG_REPORT.md](MOTOR_CAPABILITIES_MANIFEST_BUG_REPORT.md) — **Reporte de bug para capabilities_manifest** (ECONNRESET, cierre del socket por el motor y checklist de parser/state machine)
 - [GLOSARIO.md](GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [BUNNY_PROGRAMMING_PHILOSOPHY.md](BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
 - [NETWORK_OVERVIEW.md](NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)

@@ -11,9 +11,18 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+
 void bunny_begin(void);
 void bunny_load_modules(void);
 void bunny_loop(void);
+
+/**
+ * Serializa las capacidades registradas en formato JSON.
+ *
+ * Retorna bytes escritos (sin terminador nulo).
+ */
+size_t bunny_serialize_capabilities(char* buf, size_t len);
 
 #ifdef __cplusplus
 }
