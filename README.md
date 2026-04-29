@@ -32,7 +32,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [PROCESS_ENGINE_CONNECTION_GUIDE.md](doc/PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
 - [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](doc/PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
 - [GLOSARIO.md](doc/GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
-- [FRAMEWORK_VS_LIBRARY.md](doc/FRAMEWORK_VS_LIBRARY.md) — **¿Por qué Bunny es un Framework y no una Librería?** (Diferencias fundamentales, control de flujo, estructura, patrones, filosofía)
+- [FRAMEWORK_VS_LIBRARY.md](doc/FRAMEWORK_VS_LIBRARY.md) — **¿Por qué Bunny es un Framework? Arquitectura y Patrones** (Diferencias framework vs librería, arquitectura hexagonal, patrones de diseño, separación de responsabilidades)
 - [BUNNY_PROGRAMMING_PHILOSOPHY.md](doc/BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
 - [NETWORK_OVERVIEW.md](doc/NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
 - [Documentación de tesis](#documentación-de-tesis)

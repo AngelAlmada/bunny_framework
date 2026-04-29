@@ -187,3 +187,187 @@ Pero Bunny **sí las hay**. Eso lo hace un framework.
 4. **LLM-friendly:** La estructura clara facilita generación y análisis automático.
 5. **Escalabilidad:** Nuevos módulos se integran sin fricción.
 6. **Mantenibilidad:** Todo devloper sabe dónde buscar cada cosa.
+---
+
+## Arquitectura y Patrones de Diseño
+
+### Arquitectura General: Hexagonal (Ports & Adapters) + Event-Driven
+
+Bunny implementa una **arquitectura hexagonal** (puertos y adaptadores) combinada con **event-driven**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      MOTOR DE PROCESOS                      │
+│                      (Externo, decide)                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │ JSON over WebSocket (BCP)
+┌────────────────────────▼────────────────────────────────────┐
+│          BUNNY FRAMEWORK (ESP32 + Firmware)                 │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ NÚCLEO (Hardware-Agnostic)                             │ │
+│  │ - Registry, Builders, Metadata, Protocol               │ │
+│  └────────────────────────────────────────────────────────┘ │
+│         ▲                    ▲                    ▲           │
+│  ┌──────┴─────┐      ┌──────┴─────┐      ┌────┴───────┐   │
+│  │  SENSORES  │      │  COMANDOS  │      │   EVENTOS  │   │
+│  └────┬─────┬┘      └──────┬─────┘      └────┬──┬────┘   │
+│  ┌────▼─┐ ┌─▼────┐   ┌────▼───┐      ┌──────▼──▼─────┐  │
+│  │ GPIO │ │ I2C  │   │Actuador│      │ Estado Local  │  │
+│  └──────┘ └──────┘   └────────┘      └───────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**¿Por qué hexagonal?** Puertos (entrada/salida), Adaptadores (hardware específico), Núcleo (agnóstico a hardware).
+
+### Patrones de Diseño Identificados
+
+#### 1. **Builder Fluent Pattern** (70% de la arquitectura)
+
+```cpp
+Bunny.sensor("temperature")
+     .description("Room temperature")
+     .returns(NUMBER)
+     .tag("environment")
+     .build([]() { return read_temp(); });
+```
+
+Readabilidad, validación de compilación, abstracción del registry.
+
+#### 2. **Registry Singleton Pattern**
+
+Un único registro centralizado (`Bunny`) almacena todas las capacidades.
+
+Punto único de verdad, serialización JSON consistente.
+
+#### 3. **Abstract Factory + Polymorphism**
+
+`ICapability` base con implementaciones específicas (Sensor, Command, Event, State).
+
+Extensibilidad sin romper código existente.
+
+#### 4. **Strategy Pattern** (Lambdas)
+
+Lambdas que encapsulan comportamiento pluggable.
+
+Desacoplamiento total entre hardware y framework.
+
+#### 5. **Observer Pattern**
+
+Eventos fundamentales. Motor se suscribe a eventos del dispositivo.
+
+Comunicación asíncrona, desacoplamiento.
+
+#### 6. **Template Method Pattern**
+
+Framework dicta el flujo: `bunny_begin()` → `bunny_load_modules()` → `bunny_loop()`.
+
+Control de flujo, garantías de orden.
+
+#### 7. **Declarative Programming Model**
+
+Dices QUÉ capacidades tienes, no CÓMO las registras.
+
+Conciso, claro, ideal para LLMs.
+
+---
+
+### Separación de Responsabilidades (La Clave)
+
+| Componente | Responsabilidad | Hardware | Lógica |
+|-----------|-----------------|----------|---------|
+| **Firmware** | Sensores/actuadores | ✅ SÍ | ❌ NO |
+| **Bunny** | Comunicación/protocolo | ❌ NO | ❌ NO |
+| **Motor** | Reglas/flujos/decisiones | ❌ NO | ✅ SÍ |
+
+Esto no es sugerencia; es arquitectura **inmutable**.
+
+---
+
+### Flujo Event-Driven (No Polling)
+
+```
+Sensor → JSON → WebSocket → Motor → Decide → Comando → JSON → Actuador
+```
+
+Reactividad asíncrona, no bloqueante, economía de batería.
+
+---
+
+### Metadata Obligatoria = Contrato Ejecutable
+
+```cpp
+Bunny.sensor("temperature")
+  .description("Room temperature in Celsius")
+  .returns(NUMBER)
+  .tag("environment")
+  .affects("thermostat")
+  .example(23.5)
+  .build([](){ return read_temp(); });
+```
+
+Motor entiende sin inspeccionar código. Validación automática. Generación segura.
+
+---
+
+### Escalabilidad por Arquitectura
+
+Bunny escala por **arquitectura limpia**, no por "más código":
+
+- Límites estáticos: 32 capabilities, 8 parámetros (suficiente para IoT)
+- Decisiones complejas van al motor (con recursos)
+- Resultado: Firmware simple + Motor inteligente
+
+**Comparación:**
+
+```cpp
+// CON LIBRERÍA MONOLÍTICA: crece todo en firmware
+if(command == "on") { ... }
+else if(command == "off") { ... }
+else if(command == "schedule") { ... }
+// Firmware = spaghetti code
+
+// CON BUNNY: firmware minimalista
+Bunny.command("on").execute([](const Params& p) {
+  digitalWrite(LED, HIGH);  // Una línea
+});
+// Lógica va al motor
+```
+
+---
+
+## Justificación: Por Qué Esta Arquitectura
+
+### Para ESP32
+
+1. RAM limitada (520 KB): Arquitectura modular que cabe
+2. Sin OS: Event-driven evita threads complejos
+3. Hardware heterogéneo: Puertos/adaptadores para GPIO, I2C, SPI
+4. Comunicación remota: Motor es computadora principal
+
+### Para Desarrollo
+
+1. Firmware team: Solo hardware, sigue plantilla
+2. Backend team: Solo lógica, consume vía JSON
+3. DevOps: Integración sin tocar código
+
+### Para IA/LLMs
+
+1. Metadata: LLM entiende sin código
+2. Patrones predecibles: Code generation segura
+3. Contrato JSON: Comandos válidos asegurados
+
+---
+
+## Conclusión: Un Framework Bien Diseñado
+
+Bunny es un **sistema arquitectónico coherente** que:
+
+- ✅ Implementa patrones probados (Builder, Factory, Strategy, Observer, Template Method)
+- ✅ Separa responsabilidades de forma inmutable (Hexagonal)
+- ✅ Facilita comunicación asíncrona (Event-driven)
+- ✅ Exige contrato ejecutable (Metadata)
+- ✅ Escala por arquitectura, no por complejidad
+- ✅ Habilita colaboración (Teams, LLMs, tooling)
+- ✅ Imposibilita anti-patrones
+
+**Eso es lo que hace un buen framework.**
