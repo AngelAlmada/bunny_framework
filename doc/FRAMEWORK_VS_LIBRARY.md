@@ -221,53 +221,197 @@ Bunny implementa una **arquitectura hexagonal** (puertos y adaptadores) combinad
 
 ### Patrones de Diseño Identificados
 
-#### 1. **Builder Fluent Pattern** (70% de la arquitectura)
+#### 1. **Builder Fluent Pattern** (patrón dominante)
+
+**Qué resuelve:** declarar capacidades complejas de forma legible y encadenada, evitando constructores largos y frágiles.
+
+**Dónde se ve en Bunny:** en `SensorBuilder`, `CommandBuilder`, `EventBuilder` y `StateBuilder`, cada método devuelve `*this` para seguir encadenando.
+
+**Ejemplo real (sensor):**
 
 ```cpp
 Bunny.sensor("temperature")
-     .description("Room temperature")
-     .returns(NUMBER)
-     .tag("environment")
-     .build([]() { return read_temp(); });
+   .description("Ambient temperature in degrees Celsius")
+   .returns(NUMBER)
+   .tag("environment")
+   .tag("climate")
+   .example("Read: 23.5")
+   .build([]() -> double {
+     return read_temperature_hw();
+   });
 ```
 
-Readabilidad, validación de compilación, abstracción del registry.
+**Valor práctico:**
+- Hace visible el contrato de la capacidad en un solo bloque.
+- Reduce errores de inicialización parcial.
+- Obliga una fase de cierre (`build()`/`execute()`) donde se registra oficialmente.
 
 #### 2. **Registry Singleton Pattern**
 
-Un único registro centralizado (`Bunny`) almacena todas las capacidades.
+**Qué resuelve:** mantener un punto único de verdad para todas las capacidades cargadas.
 
-Punto único de verdad, serialización JSON consistente.
+**Dónde se ve en Bunny:** `Registry::instance()` devuelve una instancia estática y centralizada.
+
+**Ejemplo real:**
+
+```cpp
+Registry& Registry::instance() {
+  static Registry s_instance;
+  return s_instance;
+}
+
+bool Registry::register_capability(ICapability* cap) {
+  if (!cap || _count >= MAX_CAPABILITIES) return false;
+  _caps[_count++] = cap;
+  return true;
+}
+```
+
+**Valor práctico:**
+- Todas las altas pasan por el mismo lugar.
+- `serialize_capabilities()` produce un manifiesto consistente.
+- `find(name, kind)` permite despacho determinista de comandos/eventos.
 
 #### 3. **Abstract Factory + Polymorphism**
 
-`ICapability` base con implementaciones específicas (Sensor, Command, Event, State).
+**Qué resuelve:** tratar sensores, comandos, eventos y estados bajo una interfaz común.
 
-Extensibilidad sin romper código existente.
+**Dónde se ve en Bunny:** `ICapability` define el contrato; cada tipo concreta su comportamiento (`serialize`, `kind`, etc.).
 
-#### 4. **Strategy Pattern** (Lambdas)
+**Ejemplo real:**
 
-Lambdas que encapsulan comportamiento pluggable.
+```cpp
+class ICapability {
+public:
+  virtual ~ICapability() = default;
+  virtual CapabilityKind  kind()     const = 0;
+  virtual const char*     name()     const = 0;
+  virtual const Metadata& metadata() const = 0;
+  virtual size_t serialize(char* buf, size_t len) const = 0;
+};
+```
 
-Desacoplamiento total entre hardware y framework.
+**Valor práctico:**
+- El registry almacena punteros a `ICapability` sin conocer detalles internos.
+- El sistema puede iterar y serializar todas las capacidades de forma uniforme.
+- Agregar un nuevo tipo de capacidad no rompe el pipeline existente.
 
-#### 5. **Observer Pattern**
+#### 4. **Factory Method en los Builders**
 
-Eventos fundamentales. Motor se suscribe a eventos del dispositivo.
+**Qué resuelve:** encapsular la creación de objetos concretos y su registro automático.
 
-Comunicación asíncrona, desacoplamiento.
+**Dónde se ve en Bunny:** `build()` y `execute()` crean la capability concreta y la registran.
 
-#### 6. **Template Method Pattern**
+**Ejemplo real:**
 
-Framework dicta el flujo: `bunny_begin()` → `bunny_load_modules()` → `bunny_loop()`.
+```cpp
+SensorCapability* SensorBuilder::build(SensorReadFn read_fn) {
+  auto* cap = new SensorCapability(_name, _meta, std::move(read_fn));
+  Registry::instance().register_capability(cap);
+  return cap;
+}
+```
 
-Control de flujo, garantías de orden.
+**Valor práctico:**
+- El usuario del SDK no necesita hacer `new` ni tocar el registry manualmente.
+- Se evita duplicar lógica de creación/registro en cada módulo.
 
-#### 7. **Declarative Programming Model**
+#### 5. **Strategy Pattern** (hooks por lambda)
 
-Dices QUÉ capacidades tienes, no CÓMO las registras.
+**Qué resuelve:** desacoplar comportamiento variable (leer, ejecutar, emitir, set/get state) del core del framework.
 
-Conciso, claro, ideal para LLMs.
+**Dónde se ve en Bunny:** cada capability recibe funciones (`SensorReadFn`, `CommandExecuteFn`, etc.) y las ejecuta en runtime.
+
+**Ejemplo real (command):**
+
+```cpp
+Bunny.command("setFanState")
+   .description("Turn the fan relay ON or OFF")
+   .param("state", STRING, "Target state: ON or OFF")
+   .execute([](const bunny::Params& p) {
+     const char* state = p.get_string("state");
+     set_fan_hw(strcmp(state, "ON") == 0);
+   });
+```
+
+**Valor práctico:**
+- El framework no sabe cómo leer tu sensor ni cómo escribir tu GPIO.
+- El hardware cambia; el núcleo de Bunny no.
+- Las estrategias son reemplazables para mocks/tests.
+
+#### 6. **Observer Pattern** (orientado a eventos)
+
+**Qué resuelve:** publicar sucesos de dispositivo sin acoplar productor y consumidor.
+
+**Dónde se ve en Bunny:** evento declarado en firmware + emisión (`Bunny.emit`) + consumo en motor por WebSocket/BCP.
+
+**Ejemplo real (declaración de evento):**
+
+```cpp
+Bunny.event("motion_detected")
+   .description("Triggered when the PIR sensor detects movement")
+   .tag("sensor")
+   .tag("security")
+   .build([]() {
+     blink_indicator_hw();
+   });
+```
+
+**Valor práctico:**
+- El firmware emite hechos, no decide procesos de negocio.
+- El motor reacciona de forma asíncrona y orquesta flujos complejos.
+
+#### 7. **Template Method Pattern**
+
+**Qué resuelve:** forzar un ciclo de vida estable, repetible y seguro.
+
+**Dónde se ve en Bunny:** secuencia fija de arranque y operación (`begin -> load_modules -> loop`).
+
+**Ejemplo real (`app_main`):**
+
+```c
+void app_main(void)
+{
+  bunny_begin();
+
+  register_temperature_sensor();
+  register_fan_command();
+  register_motion_event();
+  register_fan_state();
+
+  bunny_load_modules();
+  bunny_loop();
+}
+```
+
+**Valor práctico:**
+- Evita arrancar red/protocolo antes de configuración.
+- Estandariza el boot de cualquier dispositivo Bunny.
+- Reduce clases de bugs por orden incorrecto.
+
+#### 8. **Declarative Programming Model**
+
+**Qué resuelve:** expresar capacidades como contrato semántico, no como lógica procedural dispersa.
+
+**Dónde se ve en Bunny:** bloques de declaración con metadata (`description`, `params`, `returns`, `tags`, `example`).
+
+**Ejemplo conceptual:**
+
+```cpp
+// Declarativo: describe la capacidad
+Bunny.sensor("temperature")
+  .description("Ambient temperature in degrees Celsius")
+  .returns(NUMBER)
+  .tag("environment")
+  .build(read_temperature);
+
+// Imperativo tradicional: crear objeto, setear campos, registrarlo manualmente
+```
+
+**Valor práctico:**
+- Contrato más claro para humanos, tooling y LLMs.
+- Facilita serialización e introspección automática.
+- Menor fricción para mantener doc y código alineados.
 
 ---
 
