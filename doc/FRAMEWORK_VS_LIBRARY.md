@@ -63,14 +63,36 @@ El valor no es solo sintáctico: ese bloque define un contrato entendible por ru
 
 ### 3. Infraestructura integrada
 
-Bunny aporta piezas transversales que normalmente en una librería tendrías que cablear manualmente:
+Bunny aporta piezas transversales que normalmente en una librería tendrías que cablear manualmente. En este contexto, "infraestructura" significa: componentes que no representan una regla de negocio, pero hacen posible que todo el sistema funcione de forma estable, repetible y observable.
 
-- Registro central de capacidades
-- Serialización de manifiesto
-- Comunicación con motor
-- Flujo de runtime para lectura, ejecución y emisión
+Una forma práctica de identificar infraestructura es esta:
+- Si aplica a todas las capacidades (no a una en particular), suele ser infraestructura.
+- Si resuelve transporte, contrato, ciclo de vida o coordinación técnica, suele ser infraestructura.
+- Si puedes reutilizarlo sin cambiar la lógica de negocio, es infraestructura.
 
-Esto reduce integración ad hoc y favorece consistencia entre dispositivos.
+En Bunny, esto se ve en cuatro bloques principales:
+
+1. Registro central de capacidades:
+- Mantiene el catálogo único de sensores, comandos, eventos y estados cargados.
+- Permite lookup por nombre/tipo para despacho en runtime.
+- Evita que cada módulo tenga su propio registro aislado.
+
+2. Serialización de manifiesto:
+- Convierte el registro a un payload JSON consistente para discovery/handshake.
+- Entrega al motor una "foto" del dispositivo (qué puede hacer y cómo invocarlo).
+- Hace posible validación e introspección desde fuera del firmware.
+
+3. Comunicación con el motor:
+- Gestiona el canal técnico (discovery, conexión y transporte de mensajes).
+- Desacopla el código de capacidades de detalles de red.
+- Permite que un sensor o comando se enfoque en hardware, no en sockets/protocolo.
+
+4. Flujo de runtime:
+- Ordena inicialización, carga de módulos y ciclo continuo.
+- Coordina lectura/ejecución/emisión sin que cada módulo implemente su propio loop.
+- Estandariza comportamiento operativo entre dispositivos Bunny.
+
+Por eso se considera infraestructura: estas piezas son la "carretera" por donde viaja la lógica de capacidades, no la lógica de negocio en sí. Sin ellas, podrías tener funciones sueltas; con ellas, tienes un sistema integrable y operable como framework.
 
 ### 4. Separación de responsabilidades
 
