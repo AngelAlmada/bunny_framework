@@ -35,7 +35,7 @@ idf_component_register(
         "registry/registry.cpp"
         # Runtime, protocol, network (stubs — to be implemented)
         "runtime/runtime.c"
-        "protocol/protocol.c"
+        "protocol/protocol.cpp"
         "network/network.c"
         "network/wifi.c"
         "network/discovery.c"
@@ -46,6 +46,7 @@ idf_component_register(
         "include"
     REQUIRES
         esp_http_server
+        esp_timer
         esp_netif
         esp_wifi
         esp_event

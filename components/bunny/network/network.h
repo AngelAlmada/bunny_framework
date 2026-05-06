@@ -11,6 +11,9 @@ void bunny_network_init(void);
 void bunny_network_connect(void);
 bool bunny_network_ws_connected(void);
 
+/* Send a text frame to the active websocket client (if connected). */
+bool bunny_network_send_text(const char* text);
+
 /* WiFi connectivity */
 bool bunny_wifi_init(void);
 bool bunny_wifi_connected(void);

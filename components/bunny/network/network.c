@@ -2,6 +2,7 @@
 #include "wifi.h"
 #include "../config/config.h"
 #include "../include/bunny.h"
+#include "../protocol/protocol.h"
 
 #include "esp_http_server.h"
 #include "esp_log.h"
@@ -116,6 +117,29 @@ static esp_err_t ws_send_text(httpd_req_t* req, const char* text)
         .len = strlen(text),
     };
     return httpd_ws_send_frame(req, &frame);
+}
+
+bool bunny_network_send_text(const char* text)
+{
+    if (!text || !s_server || s_active_client_fd < 0 || !s_app_handshake_ok) {
+        return false;
+    }
+
+    httpd_ws_frame_t frame = {
+        .final = true,
+        .fragmented = false,
+        .type = HTTPD_WS_TYPE_TEXT,
+        .payload = (uint8_t*)text,
+        .len = strlen(text),
+    };
+
+    esp_err_t ret = httpd_ws_send_frame_async(s_server, s_active_client_fd, &frame);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "WebSocket async send failed: %s", esp_err_to_name(ret));
+        return false;
+    }
+
+    return true;
 }
 
 static esp_err_t ws_send_handshake_error(httpd_req_t* req,
@@ -283,6 +307,13 @@ static esp_err_t ws_handle_post_handshake_text(httpd_req_t* req, const char* pay
         return ws_send_capabilities_manifest(req);
     }
 
+    char* response = bunny_protocol_handle_incoming(payload);
+    if (response) {
+        esp_err_t send_ret = ws_send_text(req, response);
+        bunny_protocol_free_message(response);
+        return send_ret;
+    }
+
     ESP_LOGI(TAG, "WebSocket message received (engine=%s): %s",
              s_active_engine_id[0] ? s_active_engine_id : "unknown",
              payload);
@@ -395,6 +426,7 @@ void bunny_network_init(void)
     }
 
     ESP_LOGI(TAG, "Network initialized (websocket path=%s)", s_ws_path);
+    bunny_protocol_init();
 }
 
 void bunny_network_connect(void)

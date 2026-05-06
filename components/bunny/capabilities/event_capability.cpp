@@ -1,5 +1,6 @@
 #include "event_capability.h"
 #include "../utils/json_builder.h"
+#include "../protocol/protocol.h"
 #include <cstdio>
 
 namespace bunny {
@@ -11,6 +12,7 @@ void EventCapability::emit() const {
     /* Transport layer (network module) handles sending to motor de procesos.
        The optional local hook runs for hardware side-effects only. */
     if (_on_emit) _on_emit();
+    (void)bunny_protocol_emit_event(_name, "{}");
 }
 
 size_t EventCapability::serialize(char* buf, size_t len) const {

@@ -49,6 +49,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 
 - [DOCUMENTACION_TESIS_PRINCIPAL.md](doc/DOCUMENTACION_TESIS_PRINCIPAL.md) — Versión condensada para el cuerpo principal de tesis (arquitectura, flujo y evidencia de implementación)
 - [DOCUMENTACION_TESIS_ANEXOS.md](doc/DOCUMENTACION_TESIS_ANEXOS.md) — Versión extendida para anexos (detalles técnicos, decisiones y fragmentos adicionales de código)
+- [DOCUMENTACION_TESIS_DIAPOSITIVA_UNICA.md](doc/DOCUMENTACION_TESIS_DIAPOSITIVA_UNICA.md) — Versión ultra resumida para una sola diapositiva (qué es, para qué sirve y código esencial)
 
 ## Objetivo
 
