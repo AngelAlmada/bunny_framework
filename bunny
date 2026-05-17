@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+BUNNY_CLI_VERSION = "1.0.0"
+
 
 def default_port() -> str:
     env_port = os.getenv("BUNNY_PORT")
@@ -80,11 +82,17 @@ def usage() -> None:
     
     print(
         "Usage:\n"
+        "  bunny --version               Show CLI version\n"
+        "  bunny --help                  Show this help message\n"
+        "  bunny create <project_name>\n"
+        "  bunny generate <type> <name>  (Alias: g)\n"
+        "  bunny destroy <type> <name>   (Alias: rm, d)\n"
         "  bunny install [--skip-python] [--skip-espidf] [--skip-env]\n"
-        "  bunny i       [--skip-python] [--skip-espidf] [--skip-env]\n"
         "  bunny flash\n"
         "  bunny flash clean\n"
         "  bunny monitor\n\n"
+        "Types for generate/destroy:\n"
+        "  command, state, sensor, event\n\n"
         "Install options:\n"
         "  --skip-python   Skip Python installation check\n"
         "  --skip-espidf   Skip ESP-IDF installation check\n"
@@ -97,38 +105,47 @@ def usage() -> None:
     )
 
 
-def find_idf_command() -> list[str] | None:
-    idf_in_path = shutil.which("idf.py")
-    if idf_in_path:
-        return [idf_in_path]
+def run_idf_cmd(extra_args: list[str]) -> int:
+    """Run idf.py commands by automatically sourcing the ESP-IDF environment."""
+    system = platform.system().lower()
+    
+    # Locate ESP-IDF directory
+    idf_path_env = os.getenv("IDF_PATH")
+    if idf_path_env and Path(idf_path_env).exists():
+        idf_dir = Path(idf_path_env)
+    else:
+        idf_dir = Path.home() / "esp" / "esp-idf"
+    
+    if not idf_dir.exists():
+        print("Error: ESP-IDF not found. Please run 'bunny install' first.", file=sys.stderr)
+        return 1
 
-    idf_python_env = os.getenv("IDF_PYTHON_ENV_PATH")
-    if idf_python_env:
-        py_bin = Path(idf_python_env) / ("Scripts/python.exe" if platform.system().lower() == "windows" else "bin/python")
-        if py_bin.exists():
-            idf_path = os.getenv("IDF_PATH")
-            if idf_path:
-                candidate = Path(idf_path) / "tools" / "idf.py"
-                if candidate.exists():
-                    return [str(py_bin), str(candidate)]
-
-    idf_path = os.getenv("IDF_PATH")
-    if idf_path:
-        candidate = Path(idf_path) / "tools" / "idf.py"
-        if candidate.exists():
-            return [sys.executable, str(candidate)]
-
-    home_candidate = Path.home() / "esp" / "esp-idf" / "tools" / "idf.py"
-    if home_candidate.exists():
-        return [sys.executable, str(home_candidate)]
-
-    return None
-
-
-def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
-    full = [*base_cmd, *extra_args]
-    print(f"[bunny] Running: {' '.join(full)}")
-    subprocess.run(full, check=True)
+    idf_py = idf_dir / "tools" / "idf.py"
+    
+    print(f"[bunny] Auto-loading ESP-IDF environment from {idf_dir}")
+    
+    try:
+        if system == "windows":
+            export_script = idf_dir / "export.bat"
+            if not export_script.exists():
+                print(f"Error: {export_script} not found.", file=sys.stderr)
+                return 1
+            cmd_args = " ".join(extra_args)
+            full_cmd = f'"{export_script}" && python "{idf_py}" {cmd_args}'
+            print(f"[bunny] Running: {full_cmd}")
+            subprocess.run(["cmd.exe", "/c", full_cmd], check=True)
+        else:
+            export_script = idf_dir / "export.sh"
+            if not export_script.exists():
+                print(f"Error: {export_script} not found.", file=sys.stderr)
+                return 1
+            cmd_args = " ".join(extra_args)
+            full_cmd = f'source "{export_script}" && python3 "{idf_py}" {cmd_args}'
+            print(f"[bunny] Running: {full_cmd}")
+            subprocess.run(["bash", "-c", full_cmd], check=True)
+        return 0
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
 
 
 def check_python() -> bool:
@@ -143,9 +160,14 @@ def check_python() -> bool:
 
 def check_idf() -> bool:
     """Check if ESP-IDF is installed."""
-    idf_cmd = find_idf_command()
-    if idf_cmd:
-        print("[bunny] ✓ ESP-IDF is installed")
+    idf_path_env = os.getenv("IDF_PATH")
+    if idf_path_env and Path(idf_path_env).exists():
+        idf_dir = Path(idf_path_env)
+    else:
+        idf_dir = Path.home() / "esp" / "esp-idf"
+        
+    if idf_dir.exists() and (idf_dir / "tools" / "idf.py").exists():
+        print(f"[bunny] ✓ ESP-IDF is installed at {idf_dir}")
         return True
     return False
 
@@ -198,28 +220,60 @@ def install_espidf() -> bool:
 
 
 def run_env_setup() -> bool:
-    """Run the environment setup script."""
-    print("[bunny] Setting up environment variables...")
-    script_dir = Path(__file__).parent
+    """Setup global environment variables."""
+    print("[bunny] Setting up global environment variables...")
     system = platform.system().lower()
     
-    try:
-        if system == "windows":
-            setup_script = script_dir / "setup-bunny-env.py"
-            subprocess.run([sys.executable, str(setup_script)], check=True)
-        else:
-            setup_script = script_dir / "setup-bunny-env.sh"
-            subprocess.run(["bash", str(setup_script)], check=True)
+    # If running as a packaged .exe, auto-copy to permanent location
+    if getattr(sys, 'frozen', False) and system == "windows":
+        bunny_bin_dir = Path.home() / ".bunny" / "bin"
+        bunny_bin_dir.mkdir(parents=True, exist_ok=True)
+        
+        target_exe = bunny_bin_dir / "bunny.exe"
+        try:
+            print(f"[bunny] Copying bunny.exe to {target_exe}...")
+            import shutil
+            shutil.copy2(sys.executable, target_exe)
+        except Exception as e:
+            print(f"[bunny] ✗ Failed to copy executable: {e}")
+            return False
+            
+        # Add to PATH via Windows Registry
+        try:
+            import winreg
+            print("[bunny] Adding ~/.bunny/bin to Windows PATH...")
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
+            try:
+                current_path, _ = winreg.QueryValueEx(key, "Path")
+            except OSError:
+                current_path = ""
+            
+            bin_path_str = str(bunny_bin_dir)
+            if bin_path_str not in current_path:
+                separator = ";" if current_path and not current_path.endswith(";") else ""
+                new_path = current_path + separator + bin_path_str
+                winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
+                print(f"[bunny] ✓ Successfully added to PATH")
+                
+                # Notify Windows Explorer
+                import ctypes
+                HWND_BROADCAST = 0xFFFF
+                WM_SETTINGCHANGE = 0x001A
+                SMTO_ABORTIFHUNG = 0x0002
+                ctypes.windll.user32.SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, "Environment", SMTO_ABORTIFHUNG, 5000, None)
+            else:
+                print("[bunny] ✓ Already in PATH")
+            winreg.CloseKey(key)
+        except Exception as e:
+            print(f"[bunny] ✗ Failed to update PATH: {e}")
+            return False
         
         print("[bunny] ✓ Environment setup completed")
         return True
-        
-    except subprocess.CalledProcessError as e:
-        print(f"[bunny] ✗ Failed to setup environment: {e}", file=sys.stderr)
-        return False
-    except Exception as e:
-        print(f"[bunny] ✗ Error setting up environment: {e}", file=sys.stderr)
-        return False
+    else:
+        # Not frozen, skip copying
+        print("[bunny] Running as script. Ensure this folder is in your PATH.")
+        return True
 
 
 def install_command(args: list[str]) -> int:
@@ -277,15 +331,6 @@ def install_command(args: list[str]) -> int:
 
 def monitor_command(args: list[str]) -> int:
     """Handle the monitor command to view ESP32 serial output."""
-    idf_cmd = find_idf_command()
-    if not idf_cmd:
-        print(
-            "Error: idf.py not found.\n"
-            "Run 'bunny install' to set up the development environment.\n"
-            "Or install ESP-IDF manually and load its environment.",
-            file=sys.stderr,
-        )
-        return 1
 
     port = default_port()
     baud = default_baud()
@@ -294,10 +339,7 @@ def monitor_command(args: list[str]) -> int:
     print("[bunny] Press Ctrl+] to exit the monitor\n")
 
     try:
-        run_cmd(idf_cmd, ["-p", port, "-b", baud, "monitor"])
-        return 0
-    except subprocess.CalledProcessError as exc:
-        return exc.returncode
+        return run_idf_cmd(["-p", port, "-b", baud, "monitor"])
     except KeyboardInterrupt:
         print("\n[bunny] Monitor closed by user")
         return 0
@@ -493,15 +535,125 @@ def destroy_component(args: list[str]) -> int:
             fw_file.write_text(new_fw, encoding="utf-8")
             print(f"[bunny] Removed from {fw_file}")
 
-    print(f"\\n[bunny] Successfully destroyed {comp_type} '{name}'")
+    print(f"\n[bunny] Successfully destroyed {comp_type} '{name}'")
+    return 0
+
+
+def create_project(args: list[str]) -> int:
+    """Create a new Bunny Framework project."""
+    if len(args) < 1:
+        print("Usage: bunny create <project_name>")
+        return 1
+
+    project_name = args[0]
+    target_dir = Path(project_name)
+
+    if target_dir.exists():
+        print(f"Error: Directory '{project_name}' already exists.")
+        return 1
+
+    print(f"\n[bunny] Creating new project: {project_name}")
+    print("[bunny] Downloading Bunny Framework template...")
+
+    try:
+        # Clone the repository
+        subprocess.run([
+            "git", "clone",
+            "https://github.com/AngelAlmada/bunny_framework.git",
+            str(target_dir)
+        ], check=True)
+    except subprocess.CalledProcessError:
+        print("\n[bunny] ✗ Failed to download framework template.")
+        return 1
+
+    print("[bunny] ✓ Download complete. Configuring project...")
+
+    # Remove the .git directory to detach from original history
+    git_dir = target_dir / ".git"
+    if git_dir.exists():
+        import shutil
+        def on_rm_error(func, path, exc_info):
+            import stat
+            os.chmod(path, stat.S_IWRITE)
+            os.unlink(path)
+        shutil.rmtree(git_dir, onerror=on_rm_error)
+
+    # Rename the project in CMakeLists.txt
+    cmake_file = target_dir / "CMakeLists.txt"
+    if cmake_file.exists():
+        content = cmake_file.read_text(encoding="utf-8")
+        content = content.replace("project(bunny_framework)", f"project({project_name})")
+        cmake_file.write_text(content, encoding="utf-8")
+
+    print("\n" + "=" * 80)
+    print(f"✓ Project '{project_name}' created successfully!")
+    print("=" * 80)
+    print("\nNext steps:")
+    print(f"  cd {project_name}")
+    print("  bunny install")
+    print("  bunny flash")
+    print("\nHappy Coding!")
+    return 0
+
+
+def interactive_mode() -> int:
+    import os
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(r"""
+      \\
+       \\_
+        ( _\\
+        / \\__
+       / _/`"`
+      {\  )_
+       `""" + '"""' + r"""`\
+    BUNNY FRAMEWORK INSTALLER
+    """)
+    print("Welcome to the Bunny Framework setup!")
+    print("---------------------------------------")
+    print(" [1] Install global dependencies (ESP-IDF)")
+    print(" [2] Show Command Line Help")
+    print(" [3] Exit")
+    print("---------------------------------------")
+    
+    try:
+        choice = input("\nSelect an option [1-3]: ").strip()
+        if choice == "1":
+            install_command([])
+        elif choice == "2":
+            usage()
+        elif choice == "3":
+            print("\nGoodbye!")
+            return 0
+        else:
+            print("\nInvalid option.")
+    except (KeyboardInterrupt, EOFError):
+        pass
+
+    input("\nPress Enter to exit...")
     return 0
 
 
 def main() -> int:
+    import io
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'buffer'):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
     args = sys.argv[1:]
-    if not args or args[0] in {"-h", "--help", "help"}:
+    
+    # INTERACTIVE MODE ON DOUBLE CLICK
+    if not args:
+        return interactive_mode()
+
+    if args[0] in {"-h", "--help", "help"}:
         usage()
-        return 0 if args else 1
+        return 0
+
+    if args[0] in {"-v", "--version", "version"}:
+        print(f"Bunny Framework CLI v{BUNNY_CLI_VERSION}")
+        return 0
 
     if args[0] in {"install", "i"}:
         return install_command(args[1:])
@@ -515,18 +667,11 @@ def main() -> int:
     if args[0] in {"destroy", "rm", "d"}:
         return destroy_component(args[1:])
 
+    if args[0] in {"create", "c"}:
+        return create_project(args[1:])
+
     if args[0] != "flash":
         usage()
-        return 1
-
-    idf_cmd = find_idf_command()
-    if not idf_cmd:
-        print(
-            "Error: idf.py not found.\n"
-            "Run 'bunny install' to set up the development environment.\n"
-            "Or install ESP-IDF manually and load its environment.",
-            file=sys.stderr,
-        )
         return 1
 
     port = default_port()
@@ -534,13 +679,12 @@ def main() -> int:
 
     try:
         if len(args) == 1:
-            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
-            return 0
+            return run_idf_cmd(["-p", port, "-b", baud, "flash"])
 
         if len(args) == 2 and args[1] == "clean":
             # Try fullclean first, but if it fails due to managed_components issues, use manual cleanup
             try:
-                run_cmd(idf_cmd, ["fullclean"])
+                run_idf_cmd(["fullclean"])
             except subprocess.CalledProcessError:
                 # If fullclean fails, manually remove build directory and reconfigure
                 print("[bunny] fullclean failed, cleaning manually...")
@@ -549,9 +693,8 @@ def main() -> int:
                     shutil.rmtree(build_dir)
                     print("[bunny] Removed build directory")
             
-            run_cmd(idf_cmd, ["reconfigure"])
-            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
-            return 0
+            run_idf_cmd(["reconfigure"])
+            return run_idf_cmd(["-p", port, "-b", baud, "flash"])
 
         usage()
         return 1

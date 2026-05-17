@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS
+        "commands/motores_command.cpp"
+        "bunny_framework.cpp"
+        "sensors/temperature_sensor.cpp"
+        "commands/fan_command.cpp"
+        "commands/display_command.cpp"
+        "events/motion_event.cpp"
+        "states/fan_state.cpp"
+        "states/display_state.cpp"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        bunny
+        display
+)

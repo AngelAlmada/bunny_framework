@@ -1,0 +1,563 @@
+#!/usr/bin/env python3
+import os
+import platform
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+def default_port() -> str:
+    env_port = os.getenv("BUNNY_PORT")
+    if env_port:
+        return env_port
+
+    system = platform.system().lower()
+    if system == "windows":
+        return _find_serial_port_windows() or "COM3"
+    if system == "darwin":
+        return "/dev/cu.usbserial"
+    return "/dev/ttyUSB0"
+
+
+def _find_serial_port_windows() -> str | None:
+    """Try to find an available serial port on Windows."""
+    try:
+        import serial.tools.list_ports
+        
+        ports = serial.tools.list_ports.comports()
+        for port in ports:
+            # Prefer ESP32 ports
+            if "ESP" in port.description or "CH340" in port.description or "CP2102" in port.description:
+                return port.device
+        # Return first available port
+        if ports:
+            return ports[0].device
+    except ImportError:
+        # pyserial not installed, fall back to default
+        pass
+    except Exception:
+        # Any other error, fall back to default
+        pass
+    return None
+
+
+def default_baud() -> str:
+    return os.getenv("BUNNY_BAUD", "115200")
+
+
+def usage() -> None:
+    system = platform.system().lower()
+    
+    if system == "windows":
+        examples = (
+            "Examples (Windows):\n"
+            "  bunny install\n"
+            "  bunny flash\n"
+            "  bunny flash clean\n"
+            "  bunny monitor\n"
+            "  set BUNNY_PORT=COM4 && bunny flash (CMD)\n"
+            "  $env:BUNNY_PORT='COM4'; bunny monitor (PowerShell)\n"
+        )
+    elif system == "darwin":
+        examples = (
+            "Examples (macOS):\n"
+            "  ./bunny install\n"
+            "  ./bunny flash\n"
+            "  ./bunny flash clean\n"
+            "  ./bunny monitor\n"
+            "  BUNNY_PORT=/dev/cu.usbserial ./bunny monitor\n"
+        )
+    else:
+        examples = (
+            "Examples (Linux):\n"
+            "  ./bunny install\n"
+            "  ./bunny flash\n"
+            "  ./bunny flash clean\n"
+            "  ./bunny monitor\n"
+            "  BUNNY_PORT=/dev/ttyUSB1 ./bunny monitor\n"
+        )
+    
+    print(
+        "Usage:\n"
+        "  bunny install [--skip-python] [--skip-espidf] [--skip-env]\n"
+        "  bunny i       [--skip-python] [--skip-espidf] [--skip-env]\n"
+        "  bunny flash\n"
+        "  bunny flash clean\n"
+        "  bunny monitor\n\n"
+        "Install options:\n"
+        "  --skip-python   Skip Python installation check\n"
+        "  --skip-espidf   Skip ESP-IDF installation check\n"
+        "  --skip-env      Skip environment variables setup\n\n"
+        "Environment overrides:\n"
+        "  BUNNY_PORT   Serial port (Linux: /dev/ttyUSB0, "
+        "macOS: /dev/cu.usbserial, Windows: COM3)\n"
+        "  BUNNY_BAUD   Baud rate (default: 115200)\n\n"
+        + examples
+    )
+
+
+def find_idf_command() -> list[str] | None:
+    idf_in_path = shutil.which("idf.py")
+    if idf_in_path:
+        return [idf_in_path]
+
+    idf_python_env = os.getenv("IDF_PYTHON_ENV_PATH")
+    if idf_python_env:
+        py_bin = Path(idf_python_env) / ("Scripts/python.exe" if platform.system().lower() == "windows" else "bin/python")
+        if py_bin.exists():
+            idf_path = os.getenv("IDF_PATH")
+            if idf_path:
+                candidate = Path(idf_path) / "tools" / "idf.py"
+                if candidate.exists():
+                    return [str(py_bin), str(candidate)]
+
+    idf_path = os.getenv("IDF_PATH")
+    if idf_path:
+        candidate = Path(idf_path) / "tools" / "idf.py"
+        if candidate.exists():
+            return [sys.executable, str(candidate)]
+
+    home_candidate = Path.home() / "esp" / "esp-idf" / "tools" / "idf.py"
+    if home_candidate.exists():
+        return [sys.executable, str(home_candidate)]
+
+    return None
+
+
+def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
+    full = [*base_cmd, *extra_args]
+    print(f"[bunny] Running: {' '.join(full)}")
+    subprocess.run(full, check=True)
+
+
+def check_python() -> bool:
+    """Check if Python 3.8+ is installed."""
+    import sys as sys_module
+    version = sys_module.version_info
+    if version.major >= 3 and version.minor >= 8:
+        print(f"[bunny] ✓ Python {version.major}.{version.minor}.{version.micro} is installed")
+        return True
+    return False
+
+
+def check_idf() -> bool:
+    """Check if ESP-IDF is installed."""
+    idf_cmd = find_idf_command()
+    if idf_cmd:
+        print("[bunny] ✓ ESP-IDF is installed")
+        return True
+    return False
+
+
+def install_espidf() -> bool:
+    """Install ESP-IDF."""
+    print("[bunny] Installing ESP-IDF...")
+    system = platform.system().lower()
+    home = Path.home()
+    idf_dir = home / "esp" / "esp-idf"
+    
+    if idf_dir.exists():
+        print(f"[bunny] ✓ ESP-IDF already exists at {idf_dir}")
+        return True
+    
+    print(f"[bunny] Cloning ESP-IDF to {idf_dir}...")
+    
+    try:
+        subprocess.run([
+            "git", "clone", 
+            "--depth", "1",
+            "-b", "release/v6.0",
+            "https://github.com/espressif/esp-idf.git",
+            str(idf_dir)
+        ], check=True)
+        
+        print("[bunny] ✓ ESP-IDF cloned successfully")
+        
+        # Run install script
+        if system == "windows":
+            install_script = idf_dir / "install.bat"
+            if install_script.exists():
+                print("[bunny] Running ESP-IDF installer...")
+                subprocess.run([str(install_script)], cwd=str(idf_dir), check=True)
+        else:
+            install_script = idf_dir / "install.sh"
+            if install_script.exists():
+                print("[bunny] Running ESP-IDF installer...")
+                subprocess.run(["bash", str(install_script)], cwd=str(idf_dir), check=True)
+        
+        print("[bunny] ✓ ESP-IDF installed successfully")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"[bunny] ✗ Failed to install ESP-IDF: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"[bunny] ✗ Error installing ESP-IDF: {e}", file=sys.stderr)
+        return False
+
+
+def run_env_setup() -> bool:
+    """Run the environment setup script."""
+    print("[bunny] Setting up environment variables...")
+    script_dir = Path(__file__).parent
+    system = platform.system().lower()
+    
+    try:
+        if system == "windows":
+            setup_script = script_dir / "setup-bunny-env.py"
+            subprocess.run([sys.executable, str(setup_script)], check=True)
+        else:
+            setup_script = script_dir / "setup-bunny-env.sh"
+            subprocess.run(["bash", str(setup_script)], check=True)
+        
+        print("[bunny] ✓ Environment setup completed")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"[bunny] ✗ Failed to setup environment: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"[bunny] ✗ Error setting up environment: {e}", file=sys.stderr)
+        return False
+
+
+def install_command(args: list[str]) -> int:
+    """Handle the install command."""
+    print("\n" + "=" * 80)
+    print("Bunny Framework - Development Environment Installer")
+    print("=" * 80 + "\n")
+    
+    skip_python = "--skip-python" in args
+    skip_espidf = "--skip-espidf" in args
+    skip_env = "--skip-env" in args
+    
+    all_success = True
+    
+    # Check/Install Python
+    if not skip_python:
+        print("[bunny] Checking Python installation...")
+        if not check_python():
+            print("[bunny] ✗ Python 3.8+ is required but not found")
+            print("[bunny] Please install Python 3.8+ from https://www.python.org/")
+            all_success = False
+        print()
+    
+    # Check/Install ESP-IDF
+    if not skip_espidf:
+        print("[bunny] Checking ESP-IDF installation...")
+        if not check_idf():
+            print("[bunny] ESP-IDF not found, installing...")
+            if not install_espidf():
+                all_success = False
+        print()
+    
+    # Setup environment
+    if not skip_env:
+        if not run_env_setup():
+            all_success = False
+        print()
+    
+    print("=" * 80)
+    if all_success:
+        print("✓ Installation completed successfully!")
+        print("=" * 80)
+        print("\nNext steps:")
+        print("1. Restart your terminal/command prompt")
+        print("2. Run 'bunny flash' to flash your ESP32")
+        print()
+        return 0
+    else:
+        print("✗ Installation completed with errors")
+        print("=" * 80)
+        print("\nPlease check the errors above and try again.")
+        print()
+        return 1
+
+
+def monitor_command(args: list[str]) -> int:
+    """Handle the monitor command to view ESP32 serial output."""
+    idf_cmd = find_idf_command()
+    if not idf_cmd:
+        print(
+            "Error: idf.py not found.\n"
+            "Run 'bunny install' to set up the development environment.\n"
+            "Or install ESP-IDF manually and load its environment.",
+            file=sys.stderr,
+        )
+        return 1
+
+    port = default_port()
+    baud = default_baud()
+
+    print(f"[bunny] Connecting to {port} at {baud} baud...")
+    print("[bunny] Press Ctrl+] to exit the monitor\n")
+
+    try:
+        run_cmd(idf_cmd, ["-p", port, "-b", baud, "monitor"])
+        return 0
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+    except KeyboardInterrupt:
+        print("\n[bunny] Monitor closed by user")
+        return 0
+
+
+def generate_component(args: list[str]) -> int:
+    """Generate a new command, state, sensor, or event."""
+    if len(args) < 2:
+        print("Usage: bunny generate <type> <name>")
+        print("Types: command, state, sensor, event")
+        return 1
+
+    comp_type = args[0].lower()
+    name = args[1].lower()
+
+    if comp_type not in {"command", "state", "sensor", "event"}:
+        print(f"Error: Unknown component type '{comp_type}'")
+        return 1
+
+    main_dir = Path("main")
+    if not main_dir.exists():
+        print("Error: 'main' directory not found. Are you at the root of the project?")
+        return 1
+
+    target_dir = main_dir / f"{comp_type}s"
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    header_file = target_dir / f"{name}_{comp_type}.h"
+    cpp_file = target_dir / f"{name}_{comp_type}.cpp"
+
+    func_name = f"register_{name}_{comp_type}"
+
+    if comp_type == "command":
+        code_body = f"""    Bunny.command("{name}")
+         .description("Auto-generated {name} command")
+         .execute([](const bunny::Params& p) {{
+             // TODO: Implement {name} logic
+         }});"""
+    elif comp_type == "state":
+        code_body = f"""    Bunny.state("{name}", STRING)
+         .description("Auto-generated {name} state")
+         .build(
+             []() -> const char* {{ return "UNKNOWN"; }},
+             [](const char* v)   {{ /* TODO: handle setter */ }}
+         );"""
+    elif comp_type == "sensor":
+        code_body = f"""    Bunny.sensor("{name}")
+         .description("Auto-generated {name} sensor")
+         .returns(NUMBER)
+         .build([]() -> double {{
+             // TODO: Return actual sensor reading
+             return 0.0;
+         }});"""
+    elif comp_type == "event":
+        code_body = f"""    Bunny.event("{name}")
+         .description("Auto-generated {name} event")
+         .build([]() {{
+             // TODO: Optional hardware hook when event fires
+         }});"""
+
+    h_content = f"""#pragma once
+
+#ifdef __cplusplus
+extern "C" {{
+#endif
+
+/**
+ * {name.capitalize()} {comp_type.capitalize()}
+ */
+void {func_name}();
+
+#ifdef __cplusplus
+}}
+#endif
+"""
+
+    cpp_content = f"""#include "{name}_{comp_type}.h"
+#include "bunny_sdk.h"
+
+void {func_name}() {{
+{code_body}
+}}
+"""
+    if header_file.exists() or cpp_file.exists():
+        print(f"Error: Files for {name}_{comp_type} already exist!")
+        return 1
+
+    header_file.write_text(h_content, encoding="utf-8")
+    cpp_file.write_text(cpp_content, encoding="utf-8")
+
+    print(f"[bunny] Created {header_file}")
+    print(f"[bunny] Created {cpp_file}")
+
+    # Update CMakeLists.txt
+    cmake_file = main_dir / "CMakeLists.txt"
+    if cmake_file.exists():
+        cmake_content = cmake_file.read_text(encoding="utf-8")
+        src_line = f'"{comp_type}s/{name}_{comp_type}.cpp"'
+        if src_line not in cmake_content:
+            cmake_content = cmake_content.replace("SRCS", f"SRCS\n        {src_line}")
+            cmake_file.write_text(cmake_content, encoding="utf-8")
+            print(f"[bunny] Updated {cmake_file}")
+
+    # Update bunny_framework.cpp
+    fw_file = main_dir / "bunny_framework.cpp"
+    if fw_file.exists():
+        fw_content = fw_file.read_text(encoding="utf-8")
+        inc_line = f'#include "{comp_type}s/{name}_{comp_type}.h"'
+        reg_line = f'    {func_name}();'
+        
+        updated = False
+        if inc_line not in fw_content:
+            fw_content = fw_content.replace('#include "bunny.h"', f'#include "bunny.h"\n{inc_line}')
+            updated = True
+        
+        if reg_line not in fw_content:
+            marker = "/* Register all capabilities"
+            idx = fw_content.find(marker)
+            if idx != -1:
+                end_idx = fw_content.find("*/", idx) + 2
+                if end_idx > 1:
+                    fw_content = fw_content[:end_idx] + f"\n{reg_line}" + fw_content[end_idx:]
+                    updated = True
+        
+        if updated:
+            fw_file.write_text(fw_content, encoding="utf-8")
+            print(f"[bunny] Updated {fw_file}")
+
+    print(f"\\n[bunny] Successfully generated {comp_type} '{name}'")
+    return 0
+
+
+def destroy_component(args: list[str]) -> int:
+    """Destroy a previously generated command, state, sensor, or event."""
+    if len(args) < 2:
+        print("Usage: bunny destroy <type> <name>")
+        print("Types: command, state, sensor, event")
+        return 1
+
+    comp_type = args[0].lower()
+    name = args[1].lower()
+
+    if comp_type not in {"command", "state", "sensor", "event"}:
+        print(f"Error: Unknown component type '{comp_type}'")
+        return 1
+
+    main_dir = Path("main")
+    if not main_dir.exists():
+        print("Error: 'main' directory not found. Are you at the root of the project?")
+        return 1
+
+    target_dir = main_dir / f"{comp_type}s"
+    header_file = target_dir / f"{name}_{comp_type}.h"
+    cpp_file = target_dir / f"{name}_{comp_type}.cpp"
+
+    func_name = f"register_{name}_{comp_type}"
+
+    deleted_files = False
+    if header_file.exists():
+        header_file.unlink()
+        print(f"[bunny] Deleted {header_file}")
+        deleted_files = True
+    if cpp_file.exists():
+        cpp_file.unlink()
+        print(f"[bunny] Deleted {cpp_file}")
+        deleted_files = True
+
+    if not deleted_files:
+        print(f"[bunny] Files for {name}_{comp_type} not found.")
+
+    # Update CMakeLists.txt
+    cmake_file = main_dir / "CMakeLists.txt"
+    if cmake_file.exists():
+        cmake_content = cmake_file.read_text(encoding="utf-8")
+        import re
+        pattern = rf'[ \t]*"{comp_type}s/{name}_{comp_type}\.cpp"\r?\n?'
+        new_cmake, count = re.subn(pattern, '', cmake_content)
+        if count > 0:
+            cmake_file.write_text(new_cmake, encoding="utf-8")
+            print(f"[bunny] Removed from {cmake_file}")
+
+    # Update bunny_framework.cpp
+    fw_file = main_dir / "bunny_framework.cpp"
+    if fw_file.exists():
+        fw_content = fw_file.read_text(encoding="utf-8")
+        inc_pattern = rf'[ \t]*#include "{comp_type}s/{name}_{comp_type}\.h"\r?\n?'
+        reg_pattern = rf'[ \t]*{func_name}\(\);\r?\n?'
+        
+        new_fw, count_inc = re.subn(inc_pattern, '', fw_content)
+        new_fw, count_reg = re.subn(reg_pattern, '', new_fw)
+        
+        if count_inc > 0 or count_reg > 0:
+            fw_file.write_text(new_fw, encoding="utf-8")
+            print(f"[bunny] Removed from {fw_file}")
+
+    print(f"\\n[bunny] Successfully destroyed {comp_type} '{name}'")
+    return 0
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if not args or args[0] in {"-h", "--help", "help"}:
+        usage()
+        return 0 if args else 1
+
+    if args[0] in {"install", "i"}:
+        return install_command(args[1:])
+
+    if args[0] in {"monitor", "m"}:
+        return monitor_command(args[1:])
+
+    if args[0] in {"generate", "g"}:
+        return generate_component(args[1:])
+
+    if args[0] in {"destroy", "rm", "d"}:
+        return destroy_component(args[1:])
+
+    if args[0] != "flash":
+        usage()
+        return 1
+
+    idf_cmd = find_idf_command()
+    if not idf_cmd:
+        print(
+            "Error: idf.py not found.\n"
+            "Run 'bunny install' to set up the development environment.\n"
+            "Or install ESP-IDF manually and load its environment.",
+            file=sys.stderr,
+        )
+        return 1
+
+    port = default_port()
+    baud = default_baud()
+
+    try:
+        if len(args) == 1:
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
+            return 0
+
+        if len(args) == 2 and args[1] == "clean":
+            # Try fullclean first, but if it fails due to managed_components issues, use manual cleanup
+            try:
+                run_cmd(idf_cmd, ["fullclean"])
+            except subprocess.CalledProcessError:
+                # If fullclean fails, manually remove build directory and reconfigure
+                print("[bunny] fullclean failed, cleaning manually...")
+                build_dir = Path("build")
+                if build_dir.exists():
+                    shutil.rmtree(build_dir)
+                    print("[bunny] Removed build directory")
+            
+            run_cmd(idf_cmd, ["reconfigure"])
+            run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
+            return 0
+
+        usage()
+        return 1
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,4 @@
+version: "1.0.0"
+description: "ST7789 2.8\" TFT Display module with Bunny Framework capabilities and states"
+dependencies:
+  esp-idf: ">=4.4"
