@@ -27,9 +27,11 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 ## 📚 Índice de documentación
 
 - [BCP - Especificación del Bunny Communication Protocol](#bcp---especificación-del-bunny-communication-protocol)
+- [INSTALL_COMMAND.md](doc/INSTALL_COMMAND.md) — **Comando bunny install** (instalación automática de entorno de desarrollo completo)
+- [MONITOR_COMMAND.md](doc/MONITOR_COMMAND.md) — **Comando bunny monitor** (ver output serial del ESP32 en tiempo real)
+- [SETUP_ENVIRONMENT.md](doc/SETUP_ENVIRONMENT.md) — **Cómo agregar bunny al PATH** (instalación universal, pasos para cada plataforma, solución de problemas)
+- [WINDOWS_SETUP.md](doc/WINDOWS_SETUP.md) — **Guía de instalación y uso en Windows** (requisitos, instalación, comandos CLI, troubleshooting)
 - [DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) — **Guía técnica completa para desarrolladores** (Sistema de tipos, Metadata, Builders, Registry, ejemplos completos)
-- [INCLUDES_GUIDE.md](doc/INCLUDES_GUIDE.md) — **Qué incluir en cada archivo y por qué** (bunny_sdk.h vs bunny.h, árbol de includes, tabla de referencia rápida)
-- [PROCESS_ENGINE_CONNECTION_GUIDE.md](doc/PROCESS_ENGINE_CONNECTION_GUIDE.md) — **Cómo debe operar el motor de procesos** (discovery UDP, conexión WebSocket y validación de conexión)
 - [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](doc/PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
 - [GLOSARIO.md](doc/GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [FRAMEWORK_VS_LIBRARY.md](doc/FRAMEWORK_VS_LIBRARY.md) — **¿Por qué Bunny es un Framework? Arquitectura y Patrones** (Diferencias framework vs librería, arquitectura hexagonal, patrones de diseño, separación de responsabilidades)
@@ -259,6 +261,108 @@ Para flashear:
 ```bash
 idf.py -p <PORT> flash monitor
 ```
+
+## Comandos rápidos (Bunny CLI)
+
+El framework incluye comandos `bunny` para automatizar tareas comunes.
+
+### Instalación Rápida (Recomendado)
+
+Para usuarios nuevos, usa el comando `bunny install` para instalar todo automáticamente:
+
+```bash
+cd C:\proyects\bunny_framework    # Windows
+cd /ruta/a/bunny_framework        # Linux/macOS
+
+bunny install
+```
+
+Esto instala:
+- ✅ Python (si es necesario)
+- ✅ ESP-IDF (descarga e instala automáticamente)
+- ✅ Variables de entorno (bunny disponible en cualquier ubicación)
+
+Ver [doc/INSTALL_COMMAND.md](doc/INSTALL_COMMAND.md) para más detalles.
+
+### Instalación Manual (Alternativa)
+
+Si prefieres hacer el setup por partes:
+
+#### Windows (CMD):
+```cmd
+cd C:\ruta\a\bunny_framework
+setup-bunny-env.bat
+```
+
+#### Windows (PowerShell):
+```powershell
+cd C:\ruta\a\bunny_framework
+.\setup-bunny-env.ps1
+```
+
+#### Linux/macOS:
+```bash
+cd /ruta/a/bunny_framework
+bash setup-bunny-env.sh
+```
+
+#### Universal (Python):
+```bash
+python setup-bunny-env.py
+```
+
+Después de ejecutar el setup, puedes usar `bunny` desde cualquier directorio.
+
+### Uso del comando `bunny`
+
+#### Instalación de entorno (1 vez)
+```bash
+bunny install
+bunny i           # Alias corto
+```
+
+#### Flasheo de ESP32
+```bash
+bunny flash       # Flashear
+bunny flash clean # Limpiar y flashear
+```
+
+#### Monitor Serial
+```bash
+bunny monitor     # Ver output del ESP32
+bunny m           # Alias corto
+```
+
+#### En Linux/macOS:
+```bash
+./bunny flash
+./bunny flash clean
+./bunny monitor
+BUNNY_PORT=/dev/ttyUSB1 ./bunny monitor
+```
+
+#### En Windows (CMD):
+```cmd
+bunny flash
+bunny flash clean
+bunny monitor
+set BUNNY_PORT=COM4 && bunny monitor
+```
+
+#### En Windows (PowerShell):
+```powershell
+.\bunny.ps1 flash
+.\bunny.ps1 flash clean
+.\bunny.ps1 monitor
+$env:BUNNY_PORT='COM4'; .\bunny.ps1 monitor
+```
+
+#### O después de ejecutar setup (desde cualquier ubicación):
+```powershell
+bunny flash
+```
+
+**Nota:** El comando detecta automáticamente el puerto serial. Si tienes múltiples dispositivos, usa `BUNNY_PORT` para especificar cuál usar.
 
 ## Configuración del dispositivo
 

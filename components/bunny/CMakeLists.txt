@@ -39,6 +39,7 @@ idf_component_register(
         "network/network.c"
         "network/wifi.c"
         "network/discovery.c"
+        "platform/esp32/bunny_gpio.cpp"
         # Config
         "config/config.c"
     INCLUDE_DIRS
@@ -52,6 +53,7 @@ idf_component_register(
         esp_event
         nvs_flash
         lwip
+        esp_driver_gpio
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE

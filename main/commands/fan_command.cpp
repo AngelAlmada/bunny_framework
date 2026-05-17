@@ -1,5 +1,6 @@
 #include "fan_command.h"
 #include "bunny_sdk.h"
+#include "bunny_gpio.h"
 #include <cstring>
 
 /**
@@ -14,9 +15,14 @@
 
 static constexpr int FAN_PIN = 5;  // GPIO pin — adjust to your wiring
 
+static bool s_fan_initialized = false;
+
 static void set_fan_hw(bool on) {
-    // TODO: replace with real gpio_set_level(FAN_PIN, on ? 1 : 0);
-    (void)on;
+    if (!s_fan_initialized) {
+        bunny::gpio::configure(FAN_PIN, bunny::gpio::Mode::OUTPUT);
+        s_fan_initialized = true;
+    }
+    bunny::gpio::write(FAN_PIN, on ? 1 : 0);
 }
 
 void register_fan_command() {

@@ -14,10 +14,32 @@ def default_port() -> str:
 
     system = platform.system().lower()
     if system == "windows":
-        return "COM3"
+        return _find_serial_port_windows() or "COM3"
     if system == "darwin":
         return "/dev/cu.usbserial"
     return "/dev/ttyUSB0"
+
+
+def _find_serial_port_windows() -> str | None:
+    """Try to find an available serial port on Windows."""
+    try:
+        import serial.tools.list_ports
+        
+        ports = serial.tools.list_ports.comports()
+        for port in ports:
+            # Prefer ESP32 ports
+            if "ESP" in port.description or "CH340" in port.description or "CP2102" in port.description:
+                return port.device
+        # Return first available port
+        if ports:
+            return ports[0].device
+    except ImportError:
+        # pyserial not installed, fall back to default
+        pass
+    except Exception:
+        # Any other error, fall back to default
+        pass
+    return None
 
 
 def default_baud() -> str:
@@ -25,18 +47,53 @@ def default_baud() -> str:
 
 
 def usage() -> None:
+    system = platform.system().lower()
+    
+    if system == "windows":
+        examples = (
+            "Examples (Windows):\n"
+            "  bunny install\n"
+            "  bunny flash\n"
+            "  bunny flash clean\n"
+            "  bunny monitor\n"
+            "  set BUNNY_PORT=COM4 && bunny flash (CMD)\n"
+            "  $env:BUNNY_PORT='COM4'; bunny monitor (PowerShell)\n"
+        )
+    elif system == "darwin":
+        examples = (
+            "Examples (macOS):\n"
+            "  ./bunny install\n"
+            "  ./bunny flash\n"
+            "  ./bunny flash clean\n"
+            "  ./bunny monitor\n"
+            "  BUNNY_PORT=/dev/cu.usbserial ./bunny monitor\n"
+        )
+    else:
+        examples = (
+            "Examples (Linux):\n"
+            "  ./bunny install\n"
+            "  ./bunny flash\n"
+            "  ./bunny flash clean\n"
+            "  ./bunny monitor\n"
+            "  BUNNY_PORT=/dev/ttyUSB1 ./bunny monitor\n"
+        )
+    
     print(
         "Usage:\n"
+        "  bunny install [--skip-python] [--skip-espidf] [--skip-env]\n"
+        "  bunny i       [--skip-python] [--skip-espidf] [--skip-env]\n"
         "  bunny flash\n"
-        "  bunny flash clean\n\n"
+        "  bunny flash clean\n"
+        "  bunny monitor\n\n"
+        "Install options:\n"
+        "  --skip-python   Skip Python installation check\n"
+        "  --skip-espidf   Skip ESP-IDF installation check\n"
+        "  --skip-env      Skip environment variables setup\n\n"
         "Environment overrides:\n"
-        "  BUNNY_PORT   Serial port (Linux default: /dev/ttyUSB0, "
+        "  BUNNY_PORT   Serial port (Linux: /dev/ttyUSB0, "
         "macOS: /dev/cu.usbserial, Windows: COM3)\n"
         "  BUNNY_BAUD   Baud rate (default: 115200)\n\n"
-        "Examples:\n"
-        "  ./bunny flash\n"
-        "  ./bunny flash clean\n"
-        "  BUNNY_PORT=/dev/ttyUSB1 ./bunny flash\n"
+        + examples
     )
 
 
@@ -74,11 +131,190 @@ def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
     subprocess.run(full, check=True)
 
 
+def check_python() -> bool:
+    """Check if Python 3.7+ is installed."""
+    import sys as sys_module
+    version = sys_module.version_info
+    if version.major >= 3 and version.minor >= 7:
+        print(f"[bunny] ✓ Python {version.major}.{version.minor}.{version.micro} is installed")
+        return True
+    return False
+
+
+def check_idf() -> bool:
+    """Check if ESP-IDF is installed."""
+    idf_cmd = find_idf_command()
+    if idf_cmd:
+        print("[bunny] ✓ ESP-IDF is installed")
+        return True
+    return False
+
+
+def install_espidf() -> bool:
+    """Install ESP-IDF."""
+    print("[bunny] Installing ESP-IDF...")
+    system = platform.system().lower()
+    home = Path.home()
+    idf_dir = home / "esp" / "esp-idf"
+    
+    if idf_dir.exists():
+        print(f"[bunny] ✓ ESP-IDF already exists at {idf_dir}")
+        return True
+    
+    print(f"[bunny] Cloning ESP-IDF to {idf_dir}...")
+    
+    try:
+        # Clone ESP-IDF
+        subprocess.run([
+            "git", "clone", 
+            "--depth", "1",
+            "-b", "v5.0",
+            "https://github.com/espressif/esp-idf.git",
+            str(idf_dir)
+        ], check=True)
+        
+        print("[bunny] ✓ ESP-IDF cloned successfully")
+        
+        # Run install script
+        if system == "windows":
+            install_script = idf_dir / "install.bat"
+            if install_script.exists():
+                print("[bunny] Running ESP-IDF installer...")
+                subprocess.run([str(install_script)], cwd=str(idf_dir), check=True)
+        else:
+            install_script = idf_dir / "install.sh"
+            if install_script.exists():
+                print("[bunny] Running ESP-IDF installer...")
+                subprocess.run(["bash", str(install_script)], cwd=str(idf_dir), check=True)
+        
+        print("[bunny] ✓ ESP-IDF installed successfully")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"[bunny] ✗ Failed to install ESP-IDF: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"[bunny] ✗ Error installing ESP-IDF: {e}", file=sys.stderr)
+        return False
+
+
+def run_env_setup() -> bool:
+    """Run the environment setup script."""
+    print("[bunny] Setting up environment variables...")
+    script_dir = Path(__file__).parent
+    system = platform.system().lower()
+    
+    try:
+        if system == "windows":
+            setup_script = script_dir / "setup-bunny-env.py"
+            subprocess.run([sys.executable, str(setup_script)], check=True)
+        else:
+            setup_script = script_dir / "setup-bunny-env.sh"
+            subprocess.run(["bash", str(setup_script)], check=True)
+        
+        print("[bunny] ✓ Environment setup completed")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"[bunny] ✗ Failed to setup environment: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"[bunny] ✗ Error setting up environment: {e}", file=sys.stderr)
+        return False
+
+
+def install_command(args: list[str]) -> int:
+    """Handle the install command."""
+    print("\n" + "=" * 80)
+    print("Bunny Framework - Development Environment Installer")
+    print("=" * 80 + "\n")
+    
+    skip_python = "--skip-python" in args
+    skip_espidf = "--skip-espidf" in args
+    skip_env = "--skip-env" in args
+    
+    all_success = True
+    
+    # Check/Install Python
+    if not skip_python:
+        print("[bunny] Checking Python installation...")
+        if not check_python():
+            print("[bunny] ✗ Python 3.7+ is required but not found")
+            print("[bunny] Please install Python 3.7+ from https://www.python.org/")
+            all_success = False
+        print()
+    
+    # Check/Install ESP-IDF
+    if not skip_espidf:
+        print("[bunny] Checking ESP-IDF installation...")
+        if not check_idf():
+            print("[bunny] ESP-IDF not found, installing...")
+            if not install_espidf():
+                all_success = False
+        print()
+    
+    # Setup environment
+    if not skip_env:
+        if not run_env_setup():
+            all_success = False
+        print()
+    
+    print("=" * 80)
+    if all_success:
+        print("✓ Installation completed successfully!")
+        print("=" * 80)
+        print("\nNext steps:")
+        print("1. Restart your terminal/command prompt")
+        print("2. Run 'bunny flash' to flash your ESP32")
+        print()
+        return 0
+    else:
+        print("✗ Installation completed with errors")
+        print("=" * 80)
+        print("\nPlease check the errors above and try again.")
+        print()
+        return 1
+
+
+def monitor_command(args: list[str]) -> int:
+    """Handle the monitor command to view ESP32 serial output."""
+    idf_cmd = find_idf_command()
+    if not idf_cmd:
+        print(
+            "Error: idf.py not found.\n"
+            "Run 'bunny install' to set up the development environment.\n"
+            "Or install ESP-IDF manually and load its environment.",
+            file=sys.stderr,
+        )
+        return 1
+
+    port = default_port()
+    baud = default_baud()
+
+    print(f"[bunny] Connecting to {port} at {baud} baud...")
+    print("[bunny] Press Ctrl+] to exit the monitor\n")
+
+    try:
+        run_cmd(idf_cmd, ["-p", port, "-b", baud, "monitor"])
+        return 0
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+    except KeyboardInterrupt:
+        print("\n[bunny] Monitor closed by user")
+        return 0
+
+
 def main() -> int:
     args = sys.argv[1:]
     if not args or args[0] in {"-h", "--help", "help"}:
         usage()
         return 0 if args else 1
+
+    if args[0] in {"install", "i"}:
+        return install_command(args[1:])
+
+    if args[0] in {"monitor", "m"}:
+        return monitor_command(args[1:])
 
     if args[0] != "flash":
         usage()
@@ -88,9 +324,8 @@ def main() -> int:
     if not idf_cmd:
         print(
             "Error: idf.py not found.\n"
-            "Install ESP-IDF and load its environment, or set IDF_PATH.\n"
-            "Linux/macOS: source <esp-idf>/export.sh\n"
-            "Windows: run ESP-IDF PowerShell/CMD environment",
+            "Run 'bunny install' to set up the development environment.\n"
+            "Or install ESP-IDF manually and load its environment.",
             file=sys.stderr,
         )
         return 1
@@ -104,7 +339,17 @@ def main() -> int:
             return 0
 
         if len(args) == 2 and args[1] == "clean":
-            run_cmd(idf_cmd, ["fullclean"])
+            # Try fullclean first, but if it fails due to managed_components issues, use manual cleanup
+            try:
+                run_cmd(idf_cmd, ["fullclean"])
+            except subprocess.CalledProcessError:
+                # If fullclean fails, manually remove build directory and reconfigure
+                print("[bunny] fullclean failed, cleaning manually...")
+                build_dir = Path("build")
+                if build_dir.exists():
+                    shutil.rmtree(build_dir)
+                    print("[bunny] Removed build directory")
+            
             run_cmd(idf_cmd, ["reconfigure"])
             run_cmd(idf_cmd, ["-p", port, "-b", baud, "flash"])
             return 0
