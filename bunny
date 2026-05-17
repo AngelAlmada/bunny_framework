@@ -133,7 +133,7 @@ def run_idf_cmd(extra_args: list[str]) -> int:
             cmd_args = " ".join(extra_args)
             full_cmd = f'"{export_script}" && python "{idf_py}" {cmd_args}'
             print(f"[bunny] Running: {full_cmd}")
-            subprocess.run(["cmd.exe", "/c", full_cmd], check=True)
+            subprocess.run(full_cmd, shell=True, check=True)
         else:
             export_script = idf_dir / "export.sh"
             if not export_script.exists():

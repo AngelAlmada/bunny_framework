@@ -2,6 +2,7 @@
 build/
 
 # ESP-IDF temporary/config artifacts
+sdkconfig
 sdkconfig.old
 sdkconfig.*.old
 
@@ -24,3 +25,8 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# CLI Builder artifacts
+cli_builder/
+dist/
+*.spec
