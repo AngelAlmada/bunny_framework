@@ -1,5 +1,6 @@
 idf_component_register(
     SRCS
+        "commands/motores_command.cpp"
         "bunny_framework.cpp"
         "sensors/temperature_sensor.cpp"
         "commands/fan_command.cpp"

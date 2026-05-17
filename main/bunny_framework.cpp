@@ -1,4 +1,5 @@
 #include "bunny.h"
+#include "commands/motores_command.h"
 #include "sensors/temperature_sensor.h"
 #include "commands/fan_command.h"
 #include "commands/display_command.h"
@@ -17,6 +18,7 @@ extern "C" void app_main(void)
     bunny::display::init_hardware();
 
     /* Register all capabilities — order does not matter */
+    register_motores_command();
     register_temperature_sensor();
     register_fan_command();
     register_display_commands();

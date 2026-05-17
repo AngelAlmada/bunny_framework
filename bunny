@@ -132,10 +132,10 @@ def run_cmd(base_cmd: list[str], extra_args: list[str]) -> None:
 
 
 def check_python() -> bool:
-    """Check if Python 3.7+ is installed."""
+    """Check if Python 3.8+ is installed."""
     import sys as sys_module
     version = sys_module.version_info
-    if version.major >= 3 and version.minor >= 7:
+    if version.major >= 3 and version.minor >= 8:
         print(f"[bunny] ✓ Python {version.major}.{version.minor}.{version.micro} is installed")
         return True
     return False
@@ -164,11 +164,10 @@ def install_espidf() -> bool:
     print(f"[bunny] Cloning ESP-IDF to {idf_dir}...")
     
     try:
-        # Clone ESP-IDF
         subprocess.run([
             "git", "clone", 
             "--depth", "1",
-            "-b", "v5.0",
+            "-b", "release/v6.0",
             "https://github.com/espressif/esp-idf.git",
             str(idf_dir)
         ], check=True)
@@ -239,8 +238,8 @@ def install_command(args: list[str]) -> int:
     if not skip_python:
         print("[bunny] Checking Python installation...")
         if not check_python():
-            print("[bunny] ✗ Python 3.7+ is required but not found")
-            print("[bunny] Please install Python 3.7+ from https://www.python.org/")
+            print("[bunny] ✗ Python 3.8+ is required but not found")
+            print("[bunny] Please install Python 3.8+ from https://www.python.org/")
             all_success = False
         print()
     
@@ -304,6 +303,200 @@ def monitor_command(args: list[str]) -> int:
         return 0
 
 
+def generate_component(args: list[str]) -> int:
+    """Generate a new command, state, sensor, or event."""
+    if len(args) < 2:
+        print("Usage: bunny generate <type> <name>")
+        print("Types: command, state, sensor, event")
+        return 1
+
+    comp_type = args[0].lower()
+    name = args[1].lower()
+
+    if comp_type not in {"command", "state", "sensor", "event"}:
+        print(f"Error: Unknown component type '{comp_type}'")
+        return 1
+
+    main_dir = Path("main")
+    if not main_dir.exists():
+        print("Error: 'main' directory not found. Are you at the root of the project?")
+        return 1
+
+    target_dir = main_dir / f"{comp_type}s"
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    header_file = target_dir / f"{name}_{comp_type}.h"
+    cpp_file = target_dir / f"{name}_{comp_type}.cpp"
+
+    func_name = f"register_{name}_{comp_type}"
+
+    if comp_type == "command":
+        code_body = f"""    Bunny.command("{name}")
+         .description("Auto-generated {name} command")
+         .execute([](const bunny::Params& p) {{
+             // TODO: Implement {name} logic
+         }});"""
+    elif comp_type == "state":
+        code_body = f"""    Bunny.state("{name}", STRING)
+         .description("Auto-generated {name} state")
+         .build(
+             []() -> const char* {{ return "UNKNOWN"; }},
+             [](const char* v)   {{ /* TODO: handle setter */ }}
+         );"""
+    elif comp_type == "sensor":
+        code_body = f"""    Bunny.sensor("{name}")
+         .description("Auto-generated {name} sensor")
+         .returns(NUMBER)
+         .build([]() -> double {{
+             // TODO: Return actual sensor reading
+             return 0.0;
+         }});"""
+    elif comp_type == "event":
+        code_body = f"""    Bunny.event("{name}")
+         .description("Auto-generated {name} event")
+         .build([]() {{
+             // TODO: Optional hardware hook when event fires
+         }});"""
+
+    h_content = f"""#pragma once
+
+#ifdef __cplusplus
+extern "C" {{
+#endif
+
+/**
+ * {name.capitalize()} {comp_type.capitalize()}
+ */
+void {func_name}();
+
+#ifdef __cplusplus
+}}
+#endif
+"""
+
+    cpp_content = f"""#include "{name}_{comp_type}.h"
+#include "bunny_sdk.h"
+
+void {func_name}() {{
+{code_body}
+}}
+"""
+    if header_file.exists() or cpp_file.exists():
+        print(f"Error: Files for {name}_{comp_type} already exist!")
+        return 1
+
+    header_file.write_text(h_content, encoding="utf-8")
+    cpp_file.write_text(cpp_content, encoding="utf-8")
+
+    print(f"[bunny] Created {header_file}")
+    print(f"[bunny] Created {cpp_file}")
+
+    # Update CMakeLists.txt
+    cmake_file = main_dir / "CMakeLists.txt"
+    if cmake_file.exists():
+        cmake_content = cmake_file.read_text(encoding="utf-8")
+        src_line = f'"{comp_type}s/{name}_{comp_type}.cpp"'
+        if src_line not in cmake_content:
+            cmake_content = cmake_content.replace("SRCS", f"SRCS\n        {src_line}")
+            cmake_file.write_text(cmake_content, encoding="utf-8")
+            print(f"[bunny] Updated {cmake_file}")
+
+    # Update bunny_framework.cpp
+    fw_file = main_dir / "bunny_framework.cpp"
+    if fw_file.exists():
+        fw_content = fw_file.read_text(encoding="utf-8")
+        inc_line = f'#include "{comp_type}s/{name}_{comp_type}.h"'
+        reg_line = f'    {func_name}();'
+        
+        updated = False
+        if inc_line not in fw_content:
+            fw_content = fw_content.replace('#include "bunny.h"', f'#include "bunny.h"\n{inc_line}')
+            updated = True
+        
+        if reg_line not in fw_content:
+            marker = "/* Register all capabilities"
+            idx = fw_content.find(marker)
+            if idx != -1:
+                end_idx = fw_content.find("*/", idx) + 2
+                if end_idx > 1:
+                    fw_content = fw_content[:end_idx] + f"\n{reg_line}" + fw_content[end_idx:]
+                    updated = True
+        
+        if updated:
+            fw_file.write_text(fw_content, encoding="utf-8")
+            print(f"[bunny] Updated {fw_file}")
+
+    print(f"\\n[bunny] Successfully generated {comp_type} '{name}'")
+    return 0
+
+
+def destroy_component(args: list[str]) -> int:
+    """Destroy a previously generated command, state, sensor, or event."""
+    if len(args) < 2:
+        print("Usage: bunny destroy <type> <name>")
+        print("Types: command, state, sensor, event")
+        return 1
+
+    comp_type = args[0].lower()
+    name = args[1].lower()
+
+    if comp_type not in {"command", "state", "sensor", "event"}:
+        print(f"Error: Unknown component type '{comp_type}'")
+        return 1
+
+    main_dir = Path("main")
+    if not main_dir.exists():
+        print("Error: 'main' directory not found. Are you at the root of the project?")
+        return 1
+
+    target_dir = main_dir / f"{comp_type}s"
+    header_file = target_dir / f"{name}_{comp_type}.h"
+    cpp_file = target_dir / f"{name}_{comp_type}.cpp"
+
+    func_name = f"register_{name}_{comp_type}"
+
+    deleted_files = False
+    if header_file.exists():
+        header_file.unlink()
+        print(f"[bunny] Deleted {header_file}")
+        deleted_files = True
+    if cpp_file.exists():
+        cpp_file.unlink()
+        print(f"[bunny] Deleted {cpp_file}")
+        deleted_files = True
+
+    if not deleted_files:
+        print(f"[bunny] Files for {name}_{comp_type} not found.")
+
+    # Update CMakeLists.txt
+    cmake_file = main_dir / "CMakeLists.txt"
+    if cmake_file.exists():
+        cmake_content = cmake_file.read_text(encoding="utf-8")
+        import re
+        pattern = rf'[ \t]*"{comp_type}s/{name}_{comp_type}\.cpp"\r?\n?'
+        new_cmake, count = re.subn(pattern, '', cmake_content)
+        if count > 0:
+            cmake_file.write_text(new_cmake, encoding="utf-8")
+            print(f"[bunny] Removed from {cmake_file}")
+
+    # Update bunny_framework.cpp
+    fw_file = main_dir / "bunny_framework.cpp"
+    if fw_file.exists():
+        fw_content = fw_file.read_text(encoding="utf-8")
+        inc_pattern = rf'[ \t]*#include "{comp_type}s/{name}_{comp_type}\.h"\r?\n?'
+        reg_pattern = rf'[ \t]*{func_name}\(\);\r?\n?'
+        
+        new_fw, count_inc = re.subn(inc_pattern, '', fw_content)
+        new_fw, count_reg = re.subn(reg_pattern, '', new_fw)
+        
+        if count_inc > 0 or count_reg > 0:
+            fw_file.write_text(new_fw, encoding="utf-8")
+            print(f"[bunny] Removed from {fw_file}")
+
+    print(f"\\n[bunny] Successfully destroyed {comp_type} '{name}'")
+    return 0
+
+
 def main() -> int:
     args = sys.argv[1:]
     if not args or args[0] in {"-h", "--help", "help"}:
@@ -315,6 +508,12 @@ def main() -> int:
 
     if args[0] in {"monitor", "m"}:
         return monitor_command(args[1:])
+
+    if args[0] in {"generate", "g"}:
+        return generate_component(args[1:])
+
+    if args[0] in {"destroy", "rm", "d"}:
+        return destroy_component(args[1:])
 
     if args[0] != "flash":
         usage()
