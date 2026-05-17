@@ -1,25 +1,3 @@
-# Bunny Framework
-
-Framework declarativo para ESP32 orientado a capacidades de hardware (sensores, comandos, eventos y estados), donde la logica de negocio vive en un motor de procesos externo.
-
-## Documentacion principal
-
-La documentacion oficial del proyecto se encuentra en:
-
-- [doc/README.md](doc/README.md)
-
-## Especificacion del protocolo
-
-La especificacion oficial de comunicacion esta en:
-
-- [doc/BCP_SPECIFICATION.md](doc/BCP_SPECIFICATION.md)
-
-## Estructura
-
-- Codigo fuente del framework: [components/bunny](components/bunny)
-- App de ejemplo: [main](main)
-- Configuracion del dispositivo: [config/device.json](config/device.json)
-- Documentacion completa: [doc](doc)
 # Bunny Framework (ESP32)
 
 Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensores, comandos, eventos y estados), donde la **lógica de negocio vive en motor de procesos**.
@@ -27,6 +5,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 ## 📚 Índice de documentación
 
 - [BCP - Especificación del Bunny Communication Protocol](#bcp---especificación-del-bunny-communication-protocol)
+- [COMPARISON.md](doc/COMPARISON.md) — **Comparativa: Bunny Framework vs PlatformIO y Arduino**
 - [INSTALL_COMMAND.md](doc/INSTALL_COMMAND.md) — **Comando bunny install** (instalación automática de entorno de desarrollo completo)
 - [MONITOR_COMMAND.md](doc/MONITOR_COMMAND.md) — **Comando bunny monitor** (ver output serial del ESP32 en tiempo real)
 - [SETUP_ENVIRONMENT.md](doc/SETUP_ENVIRONMENT.md) — **Cómo agregar bunny al PATH** (instalación universal, pasos para cada plataforma, solución de problemas)
@@ -283,35 +262,6 @@ Esto instala:
 - ✅ Variables de entorno (bunny disponible en cualquier ubicación)
 
 Ver [doc/INSTALL_COMMAND.md](doc/INSTALL_COMMAND.md) para más detalles.
-
-### Instalación Manual (Alternativa)
-
-Si prefieres hacer el setup por partes:
-
-#### Windows (CMD):
-```cmd
-cd C:\ruta\a\bunny_framework
-setup-bunny-env.bat
-```
-
-#### Windows (PowerShell):
-```powershell
-cd C:\ruta\a\bunny_framework
-.\setup-bunny-env.ps1
-```
-
-#### Linux/macOS:
-```bash
-cd /ruta/a/bunny_framework
-bash setup-bunny-env.sh
-```
-
-#### Universal (Python):
-```bash
-python setup-bunny-env.py
-```
-
-Después de ejecutar el setup, puedes usar `bunny` desde cualquier directorio.
 
 ### Uso del comando `bunny`
 
