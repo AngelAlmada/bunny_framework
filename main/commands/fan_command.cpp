@@ -13,7 +13,7 @@
  *   { "type": "command", "command": "setFanState", "params": { "state": "ON" } }
  */
 
-static constexpr int FAN_PIN = 5;  // GPIO pin — adjust to your wiring
+static constexpr int FAN_PIN = 15;  // GPIO pin — adjust to your wiring
 
 static bool s_fan_initialized = false;
 

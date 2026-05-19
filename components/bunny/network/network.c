@@ -7,6 +7,8 @@
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -283,22 +285,38 @@ static esp_err_t ws_handle_post_handshake_text(httpd_req_t* req, const char* pay
                              json_extract_string(payload, "ts", timestamp, sizeof(timestamp));
         bool has_correlation = json_extract_string(payload, "correlation_id", correlation_id, sizeof(correlation_id));
 
-        char ack[320];
+        uint32_t free_ram = esp_get_free_heap_size();
+        uint32_t min_free_ram = esp_get_minimum_free_heap_size();
+        int8_t rssi = 0;
+        wifi_ap_record_t ap_info;
+        if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+            rssi = ap_info.rssi;
+        }
+
+        char ack[512];
         if (has_correlation) {
             snprintf(ack, sizeof(ack),
-                     "{\"type\":\"heartbeat_pong\",\"correlation_id\":\"%s\",\"ts\":\"%s\"}",
+                     "{\"type\":\"heartbeat_pong\",\"correlation_id\":\"%s\",\"ts\":\"%s\",\"metrics\":{\"free_ram\":%u,\"min_free_ram\":%u,\"wifi_rssi\":%d}}",
                      correlation_id,
-                     has_timestamp ? timestamp : "");
+                     has_timestamp ? timestamp : "",
+                     (unsigned)free_ram,
+                     (unsigned)min_free_ram,
+                     rssi);
         } else {
             snprintf(ack, sizeof(ack),
-                     "{\"type\":\"heartbeat_ack\",\"status\":\"ok\",\"timestamp\":\"%s\"}",
-                     has_timestamp ? timestamp : "");
+                     "{\"type\":\"heartbeat_ack\",\"status\":\"ok\",\"timestamp\":\"%s\",\"metrics\":{\"free_ram\":%u,\"min_free_ram\":%u,\"wifi_rssi\":%d}}",
+                     has_timestamp ? timestamp : "",
+                     (unsigned)free_ram,
+                     (unsigned)min_free_ram,
+                     rssi);
         }
 
         esp_err_t ret = ws_send_text(req, ack);
         if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Heartbeat acknowledged (engine=%s)",
-                     s_active_engine_id[0] ? s_active_engine_id : "unknown");
+            ESP_LOGI(TAG, "Heartbeat acknowledged (engine=%s, free_ram=%uB, rssi=%ddBm)",
+                     s_active_engine_id[0] ? s_active_engine_id : "unknown",
+                     (unsigned)free_ram,
+                     rssi);
         }
         return ret;
     }
