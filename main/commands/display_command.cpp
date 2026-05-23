@@ -29,6 +29,15 @@ void register_display_commands() {
             bunny::display::cmd_draw_text(p);
         });
 
+    Bunny.command("printText")
+        .description("Print formatted text with automatic word wrapping and safety limits")
+        .param("text", STRING, "Text to print (max 300 characters)")
+        .param("size", NUMBER, "Font size: 1 to 5 (default 2)")
+        .param("clear", NUMBER, "1 to clear screen first (default), 0 to overwrite")
+        .execute([](const bunny::Params& p) {
+            bunny::display::cmd_print_text(p);
+        });
+
     Bunny.command("setBrightness")
         .description("Set backlight brightness level")
         .param("level", NUMBER, "Brightness: 0 (off) to 255 (full)")

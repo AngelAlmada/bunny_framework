@@ -202,6 +202,39 @@ void cmd_draw_text(const Params& params) {
     lcd.print(text);
 }
 
+void cmd_print_text(const Params& params) {
+    const char* text = params.get_string("text");
+    if (text == nullptr) {
+        ESP_LOGW(TAG, "printText: missing 'text' parameter");
+        return;
+    }
+
+    int size = params.has("size") ? (int)params.get_number("size") : 2;
+    if (size < 1) size = 1;
+    if (size > 5) size = 5;
+
+    bool clear = params.has("clear") ? (params.get_number("clear") != 0) : true;
+
+    // Safety length limit: 300 characters max
+    char safe_text[301];
+    strncpy(safe_text, text, 300);
+    safe_text[300] = '\0';
+
+    set_last_text(safe_text);
+    ESP_LOGI(TAG, "Print wrapped text: '%s' (size=%d, clear=%d)", safe_text, size, clear);
+
+    if (clear) {
+        lcd.fillScreen(lcd.color565(0, 0, 0));
+    }
+
+    lcd.setTextWrap(true);
+    lcd.setTextColor(lcd.color565(255, 255, 255), lcd.color565(0, 0, 0));
+    lcd.setTextSize(size);
+    lcd.setCursor(10, 10);
+    lcd.print(safe_text);
+}
+
+
 void cmd_set_brightness(const Params& params) {
     int level = (int)params.get_number("level");
     

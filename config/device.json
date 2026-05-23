@@ -1,7 +1,7 @@
 {
   "device": {
-    "id": "esp32-001",
-    "name": "Si estas viendo esto, ya lograste conectar todo. HOLA MUNDO en Esp32",
+    "id": "esp32-002",
+    "name": "ESP32 C3 SUPER MINI",
     "description": "Dispositivo ESP32 gestionado por Bunny Framework",
     "type": "esp32",
     "version": "0.1.0",
@@ -9,8 +9,8 @@
   },
   "network": {
     "wifi": {
-      "ssid": "Totalplay-C9AF",
-      "password": "C9AFC9F6EUd5Ej2F",
+      "ssid": "ANGELALMADA",
+      "password": "4*J9t416",
       "auth_type": "WPA2",
       "max_retries": 5,
       "timeout_ms": 10000

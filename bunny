@@ -105,6 +105,15 @@ def usage() -> None:
     )
 
 
+def get_clean_env() -> dict[str, str]:
+    """Get a copy of os.environ with PyInstaller variables removed to prevent contaminating child python processes."""
+    env = os.environ.copy()
+    # PyInstaller overrides these, which corrupts other python environments launched as child processes
+    for key in ["PYTHONPATH", "PYTHONHOME", "PYTHONEXECUTABLE", "_MEIPASS"]:
+        env.pop(key, None)
+    return env
+
+
 def run_idf_cmd(extra_args: list[str]) -> int:
     """Run idf.py commands by automatically sourcing the ESP-IDF environment."""
     system = platform.system().lower()
@@ -133,7 +142,7 @@ def run_idf_cmd(extra_args: list[str]) -> int:
             cmd_args = " ".join(extra_args)
             full_cmd = f'"{export_script}" && python "{idf_py}" {cmd_args}'
             print(f"[bunny] Running: {full_cmd}")
-            subprocess.run(full_cmd, shell=True, check=True)
+            subprocess.run(full_cmd, shell=True, check=True, env=get_clean_env())
         else:
             export_script = idf_dir / "export.sh"
             if not export_script.exists():
@@ -142,7 +151,7 @@ def run_idf_cmd(extra_args: list[str]) -> int:
             cmd_args = " ".join(extra_args)
             full_cmd = f'source "{export_script}" && python3 "{idf_py}" {cmd_args}'
             print(f"[bunny] Running: {full_cmd}")
-            subprocess.run(["bash", "-c", full_cmd], check=True)
+            subprocess.run(["bash", "-c", full_cmd], check=True, env=get_clean_env())
         return 0
     except subprocess.CalledProcessError as exc:
         return exc.returncode

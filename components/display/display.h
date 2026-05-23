@@ -32,12 +32,13 @@ void set_brightness(const char* value);
 const char* get_last_text();
 void set_last_text(const char* value);
 
+
 // Command handlers
 void cmd_fill_screen(const Params& params);
 void cmd_draw_text(const Params& params);
+void cmd_print_text(const Params& params);
 void cmd_set_brightness(const Params& params);
 void cmd_clear_screen(const Params& params);
 
 } // namespace display
 } // namespace bunny
-

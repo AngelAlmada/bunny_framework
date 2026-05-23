@@ -54,6 +54,8 @@ idf_component_register(
         nvs_flash
         lwip
         esp_driver_gpio
+        esp_driver_ledc
+        esp_adc
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE

@@ -13,5 +13,5 @@ dependencies:
 direct_dependencies:
 - bblanchon/arduinojson
 manifest_hash: 8c65a54e3b2af4eb63b85e7001c640cf3777057bdf0eff5628d8563625b08bc5
-target: esp32
+target: esp32c3
 version: 3.0.0
