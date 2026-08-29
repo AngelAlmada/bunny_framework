@@ -45,6 +45,29 @@ StateCapability* StateBuilder::build(StateGetFn get_fn, StateSetFn set_fn) {
     return cap;
 }
 
+namespace internal {
+
+static std::vector<AutoInitFn>& get_auto_registry_list() {
+    static std::vector<AutoInitFn> s_list;
+    return s_list;
+}
+
+AutoRegistrar::AutoRegistrar(AutoInitFn fn) {
+    if (fn) {
+        get_auto_registry_list().push_back(fn);
+    }
+}
+
+void run_auto_registrations() {
+    for (auto fn : get_auto_registry_list()) {
+        if (fn) {
+            fn();
+        }
+    }
+}
+
+} // namespace internal
+
 // ── BunnySDK ─────────────────────────────────────────────────────────────────
 
 BunnySDK& BunnySDK::instance() {
@@ -60,9 +83,13 @@ void BunnySDK::begin() {
 }
 
 void BunnySDK::load_modules() {
-    // User modules self-register via their register_*() functions.
+    // Execute all static auto-registered modules
+    internal::run_auto_registrations();
+
+    // User modules self-register via BUNNY_* macros or register_*() functions.
     // This hook is called after begin() so all config is available.
     ESP_LOGI(TAG, "Capabilities registered: %u", (unsigned)Registry::instance().count());
+
     
     // Wait for WiFi connection with timeout from config
     const bunny_config_t* cfg = bunny_config_get();

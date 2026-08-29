@@ -1,5 +1,4 @@
-#include "display_state.h"
-#include "bunny_sdk.h"
+#include "bunny.h"
 #include "display.h"
 
 /**
@@ -11,7 +10,7 @@
  *  - lastText (last drawn text)
  */
 
-void register_display_states() {
+BUNNY_STATE(display_states) {
     Bunny.state("displayStatus", STRING)
         .description("Display power state (ON/OFF)")
         .tag("display")
@@ -39,3 +38,4 @@ void register_display_states() {
             bunny::display::set_last_text
         );
 }
+

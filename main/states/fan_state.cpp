@@ -1,5 +1,4 @@
-#include "fan_state.h"
-#include "bunny_sdk.h"
+#include "bunny.h"
 
 /**
  * Fan State — example capability module.
@@ -13,7 +12,7 @@
 
 static const char* s_fan_state = "OFF";
 
-void register_fan_state() {
+BUNNY_STATE(fanState) {
     Bunny.state("fanState", STRING)
          .description("Current fan relay state (ON or OFF)")
          .tag("actuator")
@@ -22,3 +21,4 @@ void register_fan_state() {
              [](const char* v)   { s_fan_state = v;    }
          );
 }
+

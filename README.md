@@ -14,6 +14,7 @@ Framework declarativo para ESP32 orientado a **capacidades de hardware** (sensor
 - [PROCESS_ENGINE_WEBSOCKET_GUIDE.md](doc/PROCESS_ENGINE_WEBSOCKET_GUIDE.md) — **Cómo debe manejar el motor la sesión WebSocket** (handshake, framing, health-check, reconexión y errores comunes)
 - [GLOSARIO.md](doc/GLOSARIO.md) — **Definición de términos clave** (Fluent API, DSL, hooks, runtime, Registry, etc.)
 - [FRAMEWORK_VS_LIBRARY.md](doc/FRAMEWORK_VS_LIBRARY.md) — **¿Por qué Bunny es un Framework? Arquitectura y Patrones** (Diferencias framework vs librería, arquitectura hexagonal, patrones de diseño, separación de responsabilidades)
+- [GPIO_GUIDE.md](doc/GPIO_GUIDE.md) — **Guía de GPIOs en ESP32 y Ruta de Aprendizaje** (Digital I/O, PWM, ADC, interrupciones asíncronas con debounce y mapa de estudio)
 - [BUNNY_PROGRAMMING_PHILOSOPHY.md](doc/BUNNY_PROGRAMMING_PHILOSOPHY.md) — **Cómo programar en Bunny** (filosofía capabilities-first y separación lógica vs firmware)
 - [NETWORK_OVERVIEW.md](doc/NETWORK_OVERVIEW.md) — **Cómo funciona la red de Bunny (visión general)** (WiFi, discovery UDP, WebSocket, FLOW y operación)
 - [Documentación de tesis](#documentación-de-tesis)
@@ -91,7 +92,7 @@ bunny_framework/
 ├── config/
 │   └── device.json
 ├── main/
-│   ├── bunny_framework.c
+│   ├── bunny_framework.cpp
 │   ├── sensors/
 │   ├── commands/
 │   ├── events/
@@ -100,37 +101,37 @@ bunny_framework/
 └── sdkconfig
 ```
 
-## Proposito de cada carpeta
+## Propósito de cada carpeta
 
 ### `components/bunny/`
-Codigo del framework en si (SDK + runtime base).
+Código del framework en sí (SDK + runtime base).
 
-- `include/`: API C compatible para `app_main` (`bunny_begin`, `bunny_load_modules`, `bunny_loop`).
+- `include/`: Headers públicos (`bunny.h` como Header Maestro, `bunny_gpio.h` para control de hardware).
 - `types/`: sistema de tipos (`NUMBER`, `STRING`, `BOOLEAN`, `OBJECT`, `ARRAY`).
-- `metadata/`: contrato semantico de capacidades (`description`, `params`, `returns`, `tags`, `affects`, `example`).
+- `metadata/`: contrato semántico de capacidades (`description`, `params`, `returns`, `tags`, `affects`, `example`).
 - `core/`: contratos base (`ICapability`, kind de capacidad).
 - `capabilities/`: implementaciones de `SensorCapability`, `CommandCapability`, `EventCapability`, `StateCapability`.
-- `builder/`: fluent API para declarar capacidades de forma ergonomica.
-- `registry/`: registro central de capacidades y serializacion a JSON.
-- `protocol/`: parseo/serializacion de mensajes JSON (motor de procesos <-> dispositivo).
-- `runtime/`: ciclo de ejecucion y despacho de hooks (sin logica de negocio).
-- `network/`: transporte (discovery UDP y conexion con motor de procesos/webhook).
-- `config/`: carga y acceso de configuracion del dispositivo (`device.json`).
-- `utils/`: helpers ligeros compartidos (ej. construccion JSON sin dependencias).
+- `builder/`: fluent API para declarar capacidades de forma ergonómica.
+- `registry/`: registro central de capacidades y serialización a JSON.
+- `protocol/`: parseo/serialización de mensajes JSON (motor de procesos <-> dispositivo).
+- `runtime/`: ciclo de ejecución y despacho de hooks (sin lógica de negocio).
+- `network/`: transporte (discovery UDP y conexión con motor de procesos/webhook).
+- `config/`: carga y acceso de configuración del dispositivo (`device.json`).
+- `utils/`: helpers ligeros compartidos (ej. construcción JSON sin dependencias).
 
 ### `config/`
-Configuracion declarativa editable por el usuario del dispositivo.
+Configuración declarativa editable por el usuario del dispositivo.
 
 - `device.json`: identidad del dispositivo, discovery UDP y webhook.
 
 ### `main/`
-Punto de entrada del firmware y modulos de ejemplo definidos por el usuario.
+Punto de entrada del firmware y módulos de capacidades auto-registrados.
 
-- `bunny_framework.c`: inicializa Bunny y registra capacidades.
-- `sensors/`: declaraciones de sensores.
-- `commands/`: declaraciones de comandos.
-- `events/`: declaraciones de eventos.
-- `states/`: declaraciones de estados.
+- `bunny_framework.cpp`: punto de entrada minimalista (`app_main`).
+- `sensors/`: declaraciones de sensores (solo `.cpp`, auto-registrados).
+- `commands/`: declaraciones de comandos (solo `.cpp`, auto-registrados).
+- `events/`: declaraciones de eventos (solo `.cpp`, auto-registrados).
+- `states/`: declaraciones de estados (solo `.cpp`, auto-registrados).
 
 ## Archivos clave del SDK
 
@@ -138,8 +139,10 @@ Para trabajar con Bunny, estos son los archivos más importantes:
 
 ### API Pública (incluir en tus módulos)
 
-- [components/bunny/bunny_sdk.h](components/bunny/bunny_sdk.h) — **Interfaz principal del SDK** (`Bunny` global, builders, lifecycle)
-- [components/bunny/include/bunny.h](components/bunny/include/bunny.h) — **Interfaz C compatible** (app_main)
+- [components/bunny/include/bunny.h](components/bunny/include/bunny.h) — **Header Maestro Unificado** (exporta SDK C++, Fluent API, macros `BUNNY_*` y `bunny::gpio`)
+- [components/bunny/include/bunny_gpio.h](components/bunny/include/bunny_gpio.h) — **Control simplificado de hardware** (`pin_mode`, `digital_write`, `analog_read`, `analog_write`, `attach_interrupt`)
+- [components/bunny/bunny_sdk.h](components/bunny/bunny_sdk.h) — **Definición de clases SDK y macros de auto-registro**
+
 
 ### Core
 
@@ -195,32 +198,76 @@ Esto permite:
 - Validacion estructurada de invocaciones.
 - Generacion de procesos y tooling automatico.
 
-## Ejemplo rapido de uso (SDK)
+## Modelo Híbrido: Rápido vs Fluent API
+
+Bunny Framework ofrece **dos formas** de declarar capacidades según la necesidad:
+
+### 🚀 1. Modo Rápido Directo (Funciones C++ Tipadas, Cero Lambdas)
+Ideal para el 90% de los casos donde solo quieres ejecutar una acción o leer un valor en pocas líneas:
 
 ```cpp
-#include "bunny_sdk.h"
+#include "bunny.h"
 
-void register_temperature_sensor() {
-  Bunny.sensor("temperature")
-       .description("Ambient temperature in Celsius")
-       .returns(NUMBER)
-       .tag("environment")
-       .build([]() -> double {
-         return 23.5; // lectura de hardware
-       });
+// Sensor rápido en 3 líneas:
+BUNNY_READ(temperature) {
+    return analog_read_mapped(34, -10.0, 60.0);
 }
 
-void register_fan_command() {
-  Bunny.command("setFanState")
-       .description("Turn fan ON or OFF")
-       .param("state", STRING, "ON or OFF")
-       .affects("fanState")
-       .execute([](const bunny::Params& p) {
-         const char* state = p.get_string("state");
-         (void)state; // accion hardware aqui
-       });
+// Comando rápido con parámetro tipado directo:
+BUNNY_ACTION(setFanState, const char* state) {
+    pin_mode(15, OUTPUT, "fan_relay");
+    digital_write(15, strcmp(state, "ON") == 0 ? HIGH : LOW);
+}
+
+// Comando con valor numérico o porcentaje:
+BUNNY_ACTION(setDimmer, int level) {
+    analog_write(18, level);
+}
+
+// Evento rápido de 1 línea:
+BUNNY_TRIGGER(motionDetected);
+```
+
+### 🌟 2. Modo Fluent (Metadatos Ricos y Documentación Semántica)
+Ideal cuando necesitas enriquecer el contrato con descripciones, tags semánticos para LLMs, validaciones y ejemplos JSON:
+
+```cpp
+#include "bunny.h"
+
+BUNNY_COMMAND(drawText) {
+    Bunny.command("drawText")
+         .description("Dibuja texto en coordenadas específicas")
+         .param("text", STRING, "Texto a mostrar")
+         .param("x", NUMBER, "Coordenada horizontal X")
+         .param("y", NUMBER, "Coordenada vertical Y")
+         .tag("display")
+         .tag("ui")
+         .example("{\"text\": \"Hola Mundo\", \"x\": 10, \"y\": 20}")
+         .execute([](const bunny::Params& p) {
+             const char* text = p.get_string("text");
+             int x = (int)p.get_number("x");
+             int y = (int)p.get_number("y");
+             // Acción de hardware...
+         });
 }
 ```
+
+
+## Manejo Ultra-Simple de Hardware (GPIOs)
+
+Bunny Framework incluye una capa de abstracción de hardware familiar y potente:
+
+| Capacidad | Función Bunny | Descripción |
+| :--- | :--- | :--- |
+| **Modo de Pin** | `pin_mode(pin, OUTPUT)` | Configura `INPUT`, `OUTPUT`, `PULLUP`, `PULLDOWN`. |
+| **Escritura Digital** | `digital_write(pin, HIGH)` | Escribe `HIGH` (3.3V) o `LOW` (0V). |
+| **Lectura Digital** | `digital_read(pin)` | Lee estado del pin (`1` o `0`). |
+| **Salida PWM** | `analog_write(pin, 128)`<br>`pwm_write_percent(pin, 75.0)` | PWM en escala 0-255 o en % (auto-gestión de canales LEDC). |
+| **Lectura ADC** | `analog_read(pin)`<br>`analog_read_voltage(pin)`<br>`analog_read_mapped(pin, min, max)` | Auto-init ADC1, promediado de ruido y conversión a voltios/escala. |
+| **Interrupciones** | `attach_interrupt(pin, FALLING, cb, 50)` | Interrupción segura asíncrona con filtro anti-rebote (*debounce*). |
+
+Ver guía completa en [doc/GPIO_GUIDE.md](doc/GPIO_GUIDE.md).
+
 
 ## Reglas importantes a tener en cuenta
 

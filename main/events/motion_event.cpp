@@ -1,5 +1,4 @@
-#include "motion_event.h"
-#include "bunny_sdk.h"
+#include "bunny.h"
 
 /**
  * Motion Event — example capability module.
@@ -14,7 +13,7 @@ static void blink_indicator_hw() {
     // TODO: gpio_set_level(LED_PIN, 1); vTaskDelay(50ms); gpio_set_level(LED_PIN, 0);
 }
 
-void register_motion_event() {
+BUNNY_EVENT(motion_detected) {
     Bunny.event("motion_detected")
          .description("Triggered when the PIR sensor detects movement")
          .tag("sensor")
@@ -23,3 +22,4 @@ void register_motion_event() {
              blink_indicator_hw();
          });
 }
+

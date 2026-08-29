@@ -33,9 +33,13 @@ idf_component_register(
         "capabilities/state_capability.cpp"
         # Registry
         "registry/registry.cpp"
-        # Runtime, protocol, network (stubs — to be implemented)
+        # Runtime, protocol, network
         "runtime/runtime.c"
+        "runtime/dispatcher.cpp"
         "protocol/protocol.cpp"
+        "protocol/dedup_cache.cpp"
+        "protocol/bcp_envelope.cpp"
+        "protocol/type_converter.cpp"
         "network/network.c"
         "network/wifi.c"
         "network/discovery.c"

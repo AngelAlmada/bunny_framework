@@ -42,6 +42,28 @@ bool Params::get_bool(const char* key) const {
     return strcmp(e->value, "true") == 0 || strcmp(e->value, "1") == 0;
 }
 
+const char* Params::get_first_string() const {
+    if (_count > 0 && _entries[0].value) {
+        return _entries[0].value;
+    }
+    return "";
+}
+
+double Params::get_first_number() const {
+    if (_count > 0 && _entries[0].value) {
+        return atof(_entries[0].value);
+    }
+    return 0.0;
+}
+
+bool Params::get_first_bool() const {
+    if (_count > 0 && _entries[0].value) {
+        return strcmp(_entries[0].value, "true") == 0 || strcmp(_entries[0].value, "1") == 0;
+    }
+    return false;
+}
+
+
 // ── CommandCapability ─────────────────────────────────────────────────────────
 
 CommandCapability::CommandCapability(const char* name, const Metadata& meta, CommandExecuteFn exec_fn)

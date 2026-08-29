@@ -26,4 +26,9 @@ size_t bunny_serialize_capabilities(char* buf, size_t len);
 
 #ifdef __cplusplus
 }
+
+// In C++, provide the full SDK, builders, GPIO utilities and auto-registration macros
+#include "bunny_sdk.h"
+#include "bunny_gpio.h"
 #endif
+

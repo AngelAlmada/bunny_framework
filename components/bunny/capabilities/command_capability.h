@@ -31,7 +31,13 @@ public:
     double      get_number(const char* key) const;
     bool        get_bool(const char* key)   const;
 
+    const char* get_first_string() const;
+    double      get_first_number() const;
+    bool        get_first_bool()   const;
+
+    const Entry* get_entry(size_t index) const { return index < _count ? &_entries[index] : nullptr; }
     size_t      size() const { return _count; }
+
 
 private:
     Entry  _entries[MAX_ENTRIES] {};

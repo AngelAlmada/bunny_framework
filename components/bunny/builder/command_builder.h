@@ -71,6 +71,15 @@ namespace bunny
          */
         CommandCapability *execute(CommandExecuteFn exec_fn);
 
+        /** Overload for simple parameter-less actions (void()) */
+        CommandCapability *execute(std::function<void()> action_fn)
+        {
+            return execute([action_fn](const Params &) {
+                if (action_fn) action_fn();
+            });
+        }
+
+
     private:
         const char *_name{nullptr};
         Metadata _meta{};

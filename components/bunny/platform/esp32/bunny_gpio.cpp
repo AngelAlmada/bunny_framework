@@ -8,8 +8,10 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <string>
+#include <algorithm>
 
 namespace bunny {
 namespace gpio {
@@ -18,6 +20,7 @@ static const char* TAG = "bunny_gpio";
 
 // ── State mappings ───────────────────────────────────────────────────────────
 static std::unordered_map<int, int> s_pin_to_channel;
+static std::unordered_set<int> s_configured_adc_pins;
 
 // ── Digital I/O ──────────────────────────────────────────────────────────────
 
@@ -67,10 +70,18 @@ bool configure(int pin, Mode mode, const char* owner_tag) {
     return true;
 }
 
+bool pin_mode(int pin, Mode mode, const char* owner_tag) {
+    return configure(pin, mode, owner_tag);
+}
+
 void write(int pin, int level) {
     if (pin >= 0) {
-        gpio_set_level((gpio_num_t)pin, level);
+        gpio_set_level((gpio_num_t)pin, level != 0 ? 1 : 0);
     }
+}
+
+void digital_write(int pin, int level) {
+    write(pin, level);
 }
 
 int read(int pin) {
@@ -80,12 +91,45 @@ int read(int pin) {
     return 0;
 }
 
+int digital_read(int pin) {
+    return read(pin);
+}
+
 // ── PWM (Control de intensidad, LEDC) ────────────────────────────────────────
 
-bool pwm_configure(int pin, int channel, int frequency_hz, int resolution_bits) {
-    if (pin < 0 || channel < 0 || channel >= LEDC_CHANNEL_MAX) return false;
+static int find_free_ledc_channel() {
+    std::unordered_set<int> used;
+    for (const auto& pair : s_pin_to_channel) {
+        used.insert(pair.second);
+    }
+    for (int ch = 0; ch < LEDC_CHANNEL_MAX; ++ch) {
+        if (used.find(ch) == used.end()) {
+            return ch;
+        }
+    }
+    return -1; // No hay canales disponibles
+}
 
-    // Reservamos el pin
+bool pwm_configure(int pin, int channel, int frequency_hz, int resolution_bits) {
+    if (pin < 0) return false;
+
+    // Si ya estaba configurado en este pin, reutilizar el canal existente
+    if (s_pin_to_channel.count(pin) > 0) {
+        return true;
+    }
+
+    // Auto-asignación de canal si se pasó -1
+    if (channel < 0) {
+        channel = find_free_ledc_channel();
+        if (channel < 0) {
+            ESP_LOGE(TAG, "PWM: No free LEDC channels available for pin %d", pin);
+            return false;
+        }
+    }
+
+    if (channel >= LEDC_CHANNEL_MAX) return false;
+
+    // Reservamos el pin en el registro central
     std::string tag = "pwm_channel_" + std::to_string(channel);
     if (!PinRegistry::instance().reserve(pin, tag)) {
         ESP_LOGE(TAG, "PWM Hardware Conflict: Pin %d already reserved by '%s'", 
@@ -141,7 +185,28 @@ void pwm_write(int pin, int duty_cycle) {
     }
 }
 
-// ── ADC (Lectura analógica, ADC1) ──────────────────────────────────────────
+bool analog_write(int pin, int duty_255) {
+    if (pin < 0) return false;
+
+    // Auto-configuración si no estaba inicializado para PWM
+    if (s_pin_to_channel.count(pin) == 0) {
+        if (!pwm_configure(pin, -1, 5000, 8)) {
+            return false;
+        }
+    }
+
+    int clamped = std::max(0, std::min(255, duty_255));
+    pwm_write(pin, clamped);
+    return true;
+}
+
+bool pwm_write_percent(int pin, double percent) {
+    double clamped = std::max(0.0, std::min(100.0, percent));
+    int duty = (int)(clamped * 255.0 / 100.0 + 0.5);
+    return analog_write(pin, duty);
+}
+
+// ── ADC (Lectura analógica, ADC1 con Auto-Init y Filtro) ───────────────────
 
 static adc_oneshot_unit_handle_t s_adc1_handle = nullptr;
 
@@ -176,6 +241,10 @@ static bool get_adc1_channel(int pin, adc_channel_t& chan) {
 bool adc_configure(int pin) {
     if (pin < 0) return false;
 
+    if (s_configured_adc_pins.count(pin) > 0) {
+        return true; // Ya configurado
+    }
+
     adc_channel_t chan;
     if (!get_adc1_channel(pin, chan)) {
         ESP_LOGE(TAG, "GPIO %d is not a valid ADC1 pin on ESP32", pin);
@@ -205,6 +274,7 @@ bool adc_configure(int pin) {
         return false;
     }
 
+    s_configured_adc_pins.insert(pin);
     return true;
 }
 
@@ -222,10 +292,41 @@ int adc_read_raw(int pin) {
     return raw_val;
 }
 
-double adc_read_voltage(int pin) {
-    int raw = adc_read_raw(pin);
-    // Resolución de 12 bits = 4095, rango de voltaje calibrado hasta 3.3V
+int analog_read(int pin, int samples) {
+    if (pin < 0) return 0;
+
+    // Auto-inicialización si el pin no estaba configurado
+    if (s_configured_adc_pins.count(pin) == 0) {
+        if (!adc_configure(pin)) {
+            return 0;
+        }
+    }
+
+    int n = std::max(1, std::min(64, samples));
+    int sum = 0;
+    for (int i = 0; i < n; ++i) {
+        sum += adc_read_raw(pin);
+    }
+    return sum / n;
+}
+
+double analog_read_voltage(int pin, int samples) {
+    int raw = analog_read(pin, samples);
     return (raw / 4095.0) * 3.3;
+}
+
+double adc_read_voltage(int pin) {
+    return analog_read_voltage(pin, 4);
+}
+
+double analog_read_percent(int pin, int samples) {
+    int raw = analog_read(pin, samples);
+    return (raw / 4095.0) * 100.0;
+}
+
+double analog_read_mapped(int pin, double out_min, double out_max, int samples) {
+    double pct = analog_read_percent(pin, samples) / 100.0;
+    return out_min + pct * (out_max - out_min);
 }
 
 // ── Interrupciones asíncronas con Debounce (ISR -> Queue -> Task) ────────────
